@@ -1,14 +1,36 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DollarSign, Calendar, Users, UserCheck } from "lucide-react"
-import { StatsChart } from "../statsChart/StatsChart"
-import { CategoryChart } from "../categoryChart/CategoryChart"
+'use client`'
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DollarSign, Calendar, Users, UserCheck } from "lucide-react";
+import { StatsChart } from "../statsChart/StatsChart";
+import { CategoryChart } from "../categoryChart/CategoryChart";
+import { adminStats } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 export function DashboardContent() {
+  
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["adminStats"],
+    queryFn: adminStats,
+  });
+  const datas = data?.data || "";
+
+  if(isLoading){
+    return (
+      <div>
+        <h2 className=" p-5 ">Data is Loading</h2>
+      </div>
+    )
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back to your admin panel</p>
+        <p className="text-muted-foreground">
+          Welcome back to your admin panel
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -19,7 +41,7 @@ export function DashboardContent() {
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$120,000</div>
+            <div className="text-2xl font-bold">${datas.totalRevenue}</div>
             <p className="text-xs text-green-600">↗ Total revenue generated</p>
           </CardContent>
         </Card>
@@ -30,7 +52,7 @@ export function DashboardContent() {
             <Calendar className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">6</div>
+            <div className="text-2xl font-bold">{datas.totalBookings}</div>
             <p className="text-xs text-blue-600">↗ Total bookings made</p>
           </CardContent>
         </Card>
@@ -41,14 +63,16 @@ export function DashboardContent() {
             <Users className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{datas.totalUsers}</div>
             <p className="text-xs text-purple-600">↗ Registered users</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Users with Bookings</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Users with Bookings
+            </CardTitle>
             <UserCheck className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
@@ -64,5 +88,5 @@ export function DashboardContent() {
         <CategoryChart />
       </div>
     </div>
-  )
+  );
 }

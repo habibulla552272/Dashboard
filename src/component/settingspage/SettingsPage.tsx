@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { ChevronRight, User, Lock } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 export function SettingsPage() {
   const { data: session } = useSession();
@@ -72,8 +73,10 @@ export function SettingsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to update");
       alert("Personal info updated successfully!");
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      if(err instanceof Error) {
+        toast.error(err.message)
+      }
     } finally {
       setLoading(false);
     }
@@ -101,8 +104,10 @@ export function SettingsPage() {
       if (!res.ok) throw new Error(data.message || "Failed to change password");
       alert("Password changed successfully!");
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      if(err instanceof Error){
+        toast.error(err.message)
+      }
     } finally {
       setLoading(false);
     }

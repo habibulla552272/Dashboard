@@ -69,7 +69,7 @@ export function Sidebar({ activePage, onPageChange }: SidebarProps) {
           </nav>
         </div>
 
-        <div className="absolute bottom-6 left-6 right-6">
+        <div className="absolute bottom-6 left-6 right-6 w-40 h-20">
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-gray-300 hover:bg-gray-800 hover:text-white"

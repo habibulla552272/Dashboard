@@ -33,235 +33,237 @@ export function ServicesPage() {
     queryFn: servicesApi.getAll,
   })
 
-  const services = Array.isArray(servicesData)
-    ? servicesData
-    : Array.isArray(servicesData?.data)
-      ? servicesData.data
-      : Array.isArray(servicesData?.services)
-        ? servicesData.services
-        : []
+  console.log('services data' , servicesData);
+  
+  // const services = Array.isArray(servicesData)
+  //   ? servicesData
+  //   : Array.isArray(servicesData?.data)
+  //     ? servicesData.data
+  //     : Array.isArray(servicesData?.services)
+  //       ? servicesData.services
+  //       : []
 
-  const createMutation = useMutation({
-    mutationFn: servicesApi.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["services"] })
-      toast({ title: "Service created successfully" })
-      const form = document.getElementById("add-service-form") as HTMLFormElement
-      form?.reset()
-      setSelectedImage(null)
-      setShowAddForm(false)
-    },
-    onError: (error) => {
-      toast({ title: "Failed to create service", variant: "destructive" })
-    },
-  })
+  // const createMutation = useMutation({
+  //   mutationFn: servicesApi.create,
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ["services"] })
+  //     toast({ title: "Service created successfully" })
+  //     const form = document.getElementById("add-service-form") as HTMLFormElement
+  //     form?.reset()
+  //     setSelectedImage(null)
+  //     setShowAddForm(false)
+  //   },
+  //   onError: (error) => {
+  //     toast({ title: "Failed to create service", variant: "destructive" })
+  //   },
+  // })
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: FormData }) => {
-      console.log("[v0] PUT function called with ID:", id)
-      return servicesApi.update(id, data)
-    },
-    onSuccess: () => {
-      console.log("[v0] PUT function completed successfully")
-      queryClient.invalidateQueries({ queryKey: ["services"] })
-      setEditingService(null)
-      toast({ title: "Service updated successfully" })
-    },
-    onError: (error) => {
-      console.log("[v0] PUT function failed:", error)
-      toast({ title: "Failed to update service", variant: "destructive" })
-    },
-  })
+  // const updateMutation = useMutation({
+  //   mutationFn: ({ id, data }: { id: string; data: FormData }) => {
+  //     console.log("[v0] PUT function called with ID:", id)
+  //     return servicesApi.update(id, data)
+  //   },
+  //   onSuccess: () => {
+  //     console.log("[v0] PUT function completed successfully")
+  //     queryClient.invalidateQueries({ queryKey: ["services"] })
+  //     setEditingService(null)
+  //     toast({ title: "Service updated successfully" })
+  //   },
+  //   onError: (error) => {
+  //     console.log("[v0] PUT function failed:", error)
+  //     toast({ title: "Failed to update service", variant: "destructive" })
+  //   },
+  // })
 
-  const deleteMutation = useMutation({
-    mutationFn: servicesApi.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["services"] })
-      toast({ title: "Service deleted successfully" })
-    },
-    onError: () => {
-      toast({ title: "Failed to delete service", variant: "destructive" })
-    },
-  })
+  // const deleteMutation = useMutation({
+  //   mutationFn: servicesApi.delete,
+  //   onSuccess: () => {
+  //     queryClient.invalidateQueries({ queryKey: ["services"] })
+  //     toast({ title: "Service deleted successfully" })
+  //   },
+  //   onError: () => {
+  //     toast({ title: "Failed to delete service", variant: "destructive" })
+  //   },
+  // })
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
+  // const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault()
+  //   const formData = new FormData(e.currentTarget)
 
-    const serviceData = new FormData()
-    serviceData.append("serviceTitle", formData.get("serviceTitle") as string)
-    serviceData.append("serviceDescription", formData.get("serviceDescription") as string)
-    serviceData.append("price", formData.get("price") as string)
+  //   const serviceData = new FormData()
+  //   serviceData.append("serviceTitle", formData.get("serviceTitle") as string)
+  //   serviceData.append("serviceDescription", formData.get("serviceDescription") as string)
+  //   serviceData.append("price", formData.get("price") as string)
 
-    const imageFile = formData.get("image") as File
-    if (imageFile && imageFile.size > 0) {
-      serviceData.append("image", imageFile)
-    }
+  //   const imageFile = formData.get("image") as File
+  //   if (imageFile && imageFile.size > 0) {
+  //     serviceData.append("image", imageFile)
+  //   }
 
-    if (editingService) {
-      console.log("[v0] Update button clicked - calling PUT function")
-      console.log("[v0] Service ID:", editingService._id)
-      console.log("[v0] Update data:", {
-        serviceTitle: formData.get("serviceTitle"),
-        serviceDescription: formData.get("serviceDescription"),
-        price: formData.get("price"),
-        hasImage: imageFile && imageFile.size > 0,
-      })
-      updateMutation.mutate({ id: editingService._id, data: serviceData })
-    } else {
-      createMutation.mutate(serviceData)
-    }
-  }
+  //   if (editingService) {
+  //     console.log("[v0] Update button clicked - calling PUT function")
+  //     console.log("[v0] Service ID:", editingService._id)
+  //     console.log("[v0] Update data:", {
+  //       serviceTitle: formData.get("serviceTitle"),
+  //       serviceDescription: formData.get("serviceDescription"),
+  //       price: formData.get("price"),
+  //       hasImage: imageFile && imageFile.size > 0,
+  //     })
+  //     updateMutation.mutate({ id: editingService._id, data: serviceData })
+  //   } else {
+  //     createMutation.mutate(serviceData)
+  //   }
+  // }
 
-  const handleAddServiceSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
+  // const handleAddServiceSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault()
+  //   const formData = new FormData(e.currentTarget)
 
-    const serviceData = new FormData()
-    serviceData.append("serviceTitle", formData.get("serviceTitle") as string)
-    serviceData.append("serviceDescription", formData.get("serviceDescription") as string)
-    serviceData.append("price", formData.get("price") as string)
+  //   const serviceData = new FormData()
+  //   serviceData.append("serviceTitle", formData.get("serviceTitle") as string)
+  //   serviceData.append("serviceDescription", formData.get("serviceDescription") as string)
+  //   serviceData.append("price", formData.get("price") as string)
 
-    if (selectedImage) {
-      serviceData.append("image", selectedImage)
-    }
+  //   if (selectedImage) {
+  //     serviceData.append("image", selectedImage)
+  //   }
 
-    createMutation.mutate(serviceData)
-  }
+  //   createMutation.mutate(serviceData)
+  // }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSelectedImage(file)
-    }
-  }
+  // const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0]
+  //   if (file) {
+  //     setSelectedImage(file)
+  //   }
+  // }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
+  // const formatDate = (dateString: string) => {
+  //   return new Date(dateString).toLocaleDateString("en-US", {
+  //     month: "2-digit",
+  //     day: "2-digit",
+  //     year: "numeric",
+  //     hour: "2-digit",
+  //     minute: "2-digit",
+  //   })
+  // }
 
-  const getImageUrl = (imagePath: string | undefined) => {
-    if (!imagePath) return "/placeholder.svg"
-    if (imagePath.startsWith("http")) return imagePath
-    return `${API_BASE_URL.replace("/api/v1", "")}/${imagePath.replace(/^\//, "")}`
-  }
+  // const getImageUrl = (imagePath: string | undefined) => {
+  //   if (!imagePath) return "/placeholder.svg"
+  //   if (imagePath.startsWith("http")) return imagePath
+  //   return `${API_BASE_URL.replace("/api/v1", "")}/${imagePath.replace(/^\//, "")}`
+  // }
 
-  if (isLoading) {
-    return <div className="p-6">Loading services...</div>
-  }
+  // if (isLoading) {
+  //   return <div className="p-6">Loading services...</div>
+  // }
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="text-red-800 font-semibold">Error loading services</h3>
-          <p className="text-red-600 text-sm mt-1">Please check your connection and try again.</p>
-        </div>
-      </div>
-    )
-  }
+  // if (error) {
+  //   return (
+  //     <div className="p-6">
+  //       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+  //         <h3 className="text-red-800 font-semibold">Error loading services</h3>
+  //         <p className="text-red-600 text-sm mt-1">Please check your connection and try again.</p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
-  if (viewingService) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => setViewingService(null)} className="flex items-center gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Services
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Service Details</h1>
-            <p className="text-gray-600 mt-1">Dashboard &gt; Services &gt; {viewingService.serviceTitle}</p>
-          </div>
-        </div>
+  // if (viewingService) {
+  //   return (
+  //     <div className="p-6 space-y-6">
+  //       <div className="flex items-center gap-4">
+  //         <Button variant="ghost" onClick={() => setViewingService(null)} className="flex items-center gap-2">
+  //           <ArrowLeft className="w-4 h-4" />
+  //           Back to Services
+  //         </Button>
+  //         <div>
+  //           <h1 className="text-3xl font-bold text-gray-900">Service Details</h1>
+  //           <p className="text-gray-600 mt-1">Dashboard &gt; Services &gt; {viewingService.serviceTitle}</p>
+  //         </div>
+  //       </div>
 
-        <div className="bg-white rounded-lg border p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <div className="w-full h-64 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-6">
-                {viewingService.imagelink ? (
-                  <img
-                    src={getImageUrl(viewingService.imagelink) || "/placeholder.svg"}
-                    alt={viewingService.serviceTitle}
-                    className="w-full h-full object-cover rounded-lg"
-                    onError={(e) => {
-                      e.currentTarget.src = "/placeholder.svg"
-                    }}
-                  />
-                ) : (
-                  <div className="w-16 h-16 bg-white/20 rounded"></div>
-                )}
-              </div>
-            </div>
+  //       <div className="bg-white rounded-lg border p-8">
+  //         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  //           <div>
+  //             <div className="w-full h-64 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-6">
+  //               {viewingService.imagelink ? (
+  //                 <img
+  //                   src={getImageUrl(viewingService.imagelink) || "/placeholder.svg"}
+  //                   alt={viewingService.serviceTitle}
+  //                   className="w-full h-full object-cover rounded-lg"
+  //                   onError={(e) => {
+  //                     e.currentTarget.src = "/placeholder.svg"
+  //                   }}
+  //                 />
+  //               ) : (
+  //                 <div className="w-16 h-16 bg-white/20 rounded"></div>
+  //               )}
+  //             </div>
+  //           </div>
 
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">{viewingService.serviceTitle}</h2>
-                <p className="text-3xl font-bold text-blue-600">${viewingService.price.toLocaleString()}</p>
-              </div>
+  //           <div className="space-y-6">
+  //             <div>
+  //               <h2 className="text-2xl font-bold text-gray-900 mb-2">{viewingService.serviceTitle}</h2>
+  //               <p className="text-3xl font-bold text-blue-600">${viewingService.price.toLocaleString()}</p>
+  //             </div>
 
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-600 leading-relaxed">{viewingService.serviceDescription}</p>
-              </div>
+  //             <div>
+  //               <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
+  //               <p className="text-gray-600 leading-relaxed">{viewingService.serviceDescription}</p>
+  //             </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Category</h4>
-                  <p className="text-gray-600">{viewingService.category || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Status</h4>
-                  <span
-                    className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                      viewingService.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {viewingService.status || "Active"}
-                  </span>
-                </div>
-              </div>
+  //             <div className="grid grid-cols-2 gap-4">
+  //               <div>
+  //                 <h4 className="font-semibold text-gray-900 mb-1">Category</h4>
+  //                 <p className="text-gray-600">{viewingService.category || "N/A"}</p>
+  //               </div>
+  //               <div>
+  //                 <h4 className="font-semibold text-gray-900 mb-1">Status</h4>
+  //                 <span
+  //                   className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+  //                     viewingService.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+  //                   }`}
+  //                 >
+  //                   {viewingService.status || "Active"}
+  //                 </span>
+  //               </div>
+  //             </div>
 
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Created</h4>
-                <p className="text-gray-600">{formatDate(viewingService.createdAt)}</p>
-              </div>
+  //             <div>
+  //               <h4 className="font-semibold text-gray-900 mb-1">Created</h4>
+  //               <p className="text-gray-600">{formatDate(viewingService.createdAt)}</p>
+  //             </div>
 
-              <div className="flex gap-3 pt-4">
-                <Button
-                  onClick={() => {
-                    setEditingService(viewingService)
-                    setViewingService(null)
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit Service
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    deleteMutation.mutate(viewingService._id)
-                    setViewingService(null)
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete Service
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  //             <div className="flex gap-3 pt-4">
+  //               <Button
+  //                 onClick={() => {
+  //                   setEditingService(viewingService)
+  //                   setViewingService(null)
+  //                 }}
+  //                 className="flex items-center gap-2"
+  //               >
+  //                 <Edit className="w-4 h-4" />
+  //                 Edit Service
+  //               </Button>
+  //               <Button
+  //                 variant="destructive"
+  //                 onClick={() => {
+  //                   deleteMutation.mutate(viewingService._id)
+  //                   setViewingService(null)
+  //                 }}
+  //                 className="flex items-center gap-2"
+  //               >
+  //                 <Trash2 className="w-4 h-4" />
+  //                 Delete Service
+  //               </Button>
+  //             </div>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="p-6 space-y-6">
@@ -348,7 +350,7 @@ export function ServicesPage() {
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              {/* <TableBody>
                 {services && services.length > 0 ? (
                   services.map((service) => (
                     <TableRow key={service._id}>
@@ -430,14 +432,14 @@ export function ServicesPage() {
                     </TableCell>
                   </TableRow>
                 )}
-              </TableBody>
+              </TableBody> */}
             </Table>
 
-            <div className="px-6 py-4 border-t">
+            {/* <div className="px-6 py-4 border-t">
               <p className="text-sm text-gray-600">
                 Showing 1 to {services.length} of {services.length} results
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
