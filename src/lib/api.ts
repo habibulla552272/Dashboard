@@ -1,14 +1,14 @@
 // API configuration and types
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+export const API_BASE_URL = "https://mohab0104-backend.onrender.com/api/v1"
 
 export interface Service {
   _id: string
-  name: string
-  description: string
+  serviceTitle: string
+  serviceDescription: string
   price: number
   category: string
   status: "active" | "inactive"
-  image?: string
+  imagelink?: string
   createdAt: string
   updatedAt: string
 }
@@ -23,6 +23,16 @@ export interface Payment {
   updatedAt: string
 }
 
+export interface StaffingNeed {
+  _id: string
+  userId: string
+  companyName: string
+  dataStrategyFocusArea: string
+  dataStrategyNotes: string
+  createdAt: string
+  updatedAt: string
+}
+
 // Services API
 export const servicesApi = {
   getAll: async (): Promise<Service[]> => {
@@ -31,31 +41,43 @@ export const servicesApi = {
     return response.json()
   },
 
-  create: async (service: Omit<Service, "_id" | "createdAt" | "updatedAt">): Promise<Service> => {
-    console.log("[v0] Creating service with data:", service)
-    console.log("[v0] API URL:", `${API_BASE_URL}/services/create`)
-
+  create: async (serviceData: {
+    serviceTitle: string
+    serviceDescription: string
+    price: number
+    category?: string
+    status?: "active" | "inactive"
+    image?: File
+  }): Promise<Service> => {
     try {
+      const formData = new FormData()
+      formData.append("serviceTitle", serviceData.serviceTitle)
+      formData.append("serviceDescription", serviceData.serviceDescription)
+      formData.append("price", serviceData.price.toString())
+
+      if (serviceData.category) {
+        formData.append("category", serviceData.category)
+      }
+      if (serviceData.status) {
+        formData.append("status", serviceData.status)
+      }
+      if (serviceData.image) {
+        formData.append("imagelink", serviceData.image)
+      }
+
       const response = await fetch(`${API_BASE_URL}/services/create`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(service),
+        body: formData, // Send as FormData instead of JSON
       })
-
-      console.log("[v0] Response status:", response.status)
-      console.log("[v0] Response ok:", response.ok)
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.log("[v0] Error response:", errorText)
         throw new Error(`Failed to create service: ${response.status} ${errorText}`)
       }
 
       const result = await response.json()
-      console.log("[v0] Service created successfully:", result)
       return result
     } catch (error) {
-      console.log("[v0] Network error:", error)
       throw error
     }
   },
@@ -96,3 +118,50 @@ export const paymentsApi = {
     return response.json()
   },
 }
+
+export const staffingNeedApi = {
+  getAll: async (): Promise<StaffingNeed[]> => {
+    const response = await fetch(`${API_BASE_URL}/needed-staff`)
+    if (!response.ok) throw new Error("Failed to fetch staffing needs")
+    return response.json()
+  },
+
+  getMyStaffingNeeds: async (): Promise<StaffingNeed[]> => {
+    const response = await fetch(`${API_BASE_URL}/needed-staff/my-needed-staff`)
+    if (!response.ok) throw new Error("Failed to fetch my staffing needs")
+    return response.json()
+  },
+
+  create: async (staffingNeedData: {
+    companyName: string
+    dataStrategyFocusArea: string
+    dataStrategyNotes: string
+  }): Promise<StaffingNeed> => {
+    const response = await fetch(`${API_BASE_URL}/needed-staff/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(staffingNeedData),
+    })
+    if (!response.ok) throw new Error("Failed to create staffing need")
+    return response.json()
+  },
+
+  update: async (id: string, staffingNeed: Partial<StaffingNeed>): Promise<StaffingNeed> => {
+    const response = await fetch(`${API_BASE_URL}/needed-staff/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(staffingNeed),
+    })
+    if (!response.ok) throw new Error("Failed to update staffing need")
+    return response.json()
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/needed-staff/${id}`, {
+      method: "DELETE",
+    })
+    if (!response.ok) throw new Error("Failed to delete staffing need")
+  },
+}
+
+export const createService = servicesApi.create

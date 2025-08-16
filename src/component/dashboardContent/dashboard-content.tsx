@@ -3,7 +3,6 @@ import { DollarSign, Calendar, Users, UserCheck } from "lucide-react"
 import { StatsChart } from "../statsChart/StatsChart"
 import { CategoryChart } from "../categoryChart/CategoryChart"
 
-
 export function DashboardContent() {
   return (
     <div className="p-6 space-y-6">

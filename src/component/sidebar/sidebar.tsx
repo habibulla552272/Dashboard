@@ -7,7 +7,6 @@ import { LayoutDashboard, Settings, CreditCard, FileText, Target, MapPin, Databa
 import { ActivePage } from "../dashboard/Dashboard"
 import { LogoutModal } from "../logout/Logout"
 
-
 interface SidebarProps {
   activePage: ActivePage
   onPageChange: (page: ActivePage) => void
@@ -38,13 +37,13 @@ export function Sidebar({ activePage, onPageChange }: SidebarProps) {
 
   return (
     <>
-      <div className="w-64 bg-sidebar border-r border-sidebar-border">
+      <div className="w-64 bg-black border-r border-gray-800">
         <div className="p-6">
           <div className="flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">Q</span>
+            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">Q</span>
             </div>
-            <span className="font-semibold text-sidebar-foreground">QUANTIVO</span>
+            <span className="font-semibold text-white">QUANTIVO</span>
           </div>
 
           <nav className="space-y-2">
@@ -53,12 +52,12 @@ export function Sidebar({ activePage, onPageChange }: SidebarProps) {
               return (
                 <Button
                   key={item.id}
-                  variant={activePage === item.id ? "secondary" : "ghost"}
+                  variant="ghost"
                   className={cn(
                     "w-full justify-start gap-3 h-10",
                     activePage === item.id
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      ? "bg-gray-800 text-white"
+                      : "text-gray-300 hover:bg-gray-800 hover:text-white",
                   )}
                   onClick={() => onPageChange(item.id)}
                 >
@@ -73,7 +72,7 @@ export function Sidebar({ activePage, onPageChange }: SidebarProps) {
         <div className="absolute bottom-6 left-6 right-6">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full justify-start gap-3 text-gray-300 hover:bg-gray-800 hover:text-white"
             onClick={() => setShowLogoutModal(true)}
           >
             <LogOut className="w-4 h-4" />

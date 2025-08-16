@@ -1,4 +1,3 @@
-
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
@@ -11,47 +10,56 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: credentials?.email,
-            password: credentials?.password,
-          }),
-        });
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: credentials?.email,
+                password: credentials?.password,
+              }),
+            }
+          );
 
-        const data = await res.json();
+          const data = await res.json();
 
-        if (data.success && data.data?.user) {
+          // Explicitly check HTTP status
+          if (!res.ok || !data.success || !data.data?.user) {
+            throw new Error(data.message || "Invalid credentials");
+          }
+
           return {
             id: data.data.user._id,
             name: `${data.data.user.firstName} ${data.data.user.lastName}`,
             email: data.data.user.email,
-            image: data.data.user.imageLink,
-            accessToken: data.data.accessToken,
+            image: data.data.user.imageLink || null,
+            accessToken: data.data.accessToken, // backend JWT
             role: data.data.user.role,
           };
+        } catch (error) {
+          console.error("Auth Error:", error);
+          throw new Error("Login failed. Please check your credentials.");
         }
-
-        throw new Error(data.message || "Invalid credentials");
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.accessToken = user.accessToken;
-        token.role = user.role;
         token.id = user.id;
+        token.role = user.role;
+        token.accessToken = user.accessToken;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.accessToken = token.accessToken;
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
       }
+      session.accessToken = token.accessToken as string;
       return session;
     },
   },
