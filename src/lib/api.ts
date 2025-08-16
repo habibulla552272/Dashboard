@@ -1,5 +1,6 @@
 // API configuration and types
 import axios from "axios";
+import { error } from "console";
 
 import { getSession } from "next-auth/react";
 // import { config } from "process";
@@ -23,6 +24,41 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
+
+
+export interface Service {
+  _id: string;
+  serviceTitle: string;
+  serviceDescription: string;
+  price: number;
+  category: string;
+  status: "active" | "inactive";
+  imagelink?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Payment {
+  _id: string;
+  amount: number;
+  status: "pending" | "completed" | "failed";
+  serviceId: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StaffingNeed {
+  _id: string;
+  userId: string;
+  companyName: string;
+  dataStrategyFocusArea: string;
+  dataStrategyNotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 //manul try
 
@@ -60,37 +96,45 @@ export async function categoryStats() {
   }
 }
 
-export interface Service {
-  _id: string;
-  serviceTitle: string;
-  serviceDescription: string;
-  price: number;
-  category: string;
-  status: "active" | "inactive";
-  imagelink?: string;
-  createdAt: string;
-  updatedAt: string;
+//Services data call
+
+export async function ServicesData() {
+    
+    try{
+    const res= await api.get('/services/get')
+    return res.data;
+  }catch(error){
+    if(error instanceof Error){
+      throw new Error('Failed to fetch admin stats')
+    }
+  }
+
 }
 
-export interface Payment {
-  _id: string;
-  amount: number;
-  status: "pending" | "completed" | "failed";
-  serviceId: string;
-  userId: string;
-  createdAt: string;
-  updatedAt: string;
+export async function serviceDelete(id:string) {
+  try{
+      const respons= await api.delete(`/services/${id}`)
+      return respons.data
+  }catch(error:any){
+    
+      throw new Error(error.message ||'Failed to fetch admin stats')
+    
+  }
+  
 }
 
-export interface StaffingNeed {
-  _id: string;
-  userId: string;
-  companyName: string;
-  dataStrategyFocusArea: string;
-  dataStrategyNotes: string;
-  createdAt: string;
-  updatedAt: string;
-}
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Services API
 export const servicesApi = {

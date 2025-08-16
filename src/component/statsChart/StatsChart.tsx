@@ -44,7 +44,7 @@ console.log(isLoading);
 
 const datas= data?.data || ''
 
-console.log(datas);
+
 
 
 

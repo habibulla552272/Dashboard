@@ -10,8 +10,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Eye, Edit, Trash2, Upload, Plus, ArrowLeft } from "lucide-react"
-import { servicesApi, type Service } from "@/lib/api"
+import { serviceDelete, servicesApi, ServicesData, type Service } from "@/lib/api"
 import { toast } from "sonner"
+import Image from "next/image"
+import { error } from "console"
 
 
 const API_BASE_URL = "https://mohab0104-backend-w28i.onrender.com/api/v1"
@@ -24,16 +26,16 @@ export function ServicesPage() {
 
   const queryClient = useQueryClient()
 
-  const {
-    data: servicesData,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["services"],
-    queryFn: servicesApi.getAll,
-  })
+  // const {
+  //   data: servicesData,
+  //   isLoading,
+  //   error,
+  // } = useQuery({
+  //   queryKey: ["services"],
+  //   queryFn: servicesApi.getAll,
+  // })
 
-  console.log('services data' , servicesData);
+  // console.log('services data' , servicesData);
   
   // const services = Array.isArray(servicesData)
   //   ? servicesData
@@ -265,6 +267,31 @@ export function ServicesPage() {
   //   )
   // }
 
+  const {data:servideData,isLoading}=useQuery({
+    queryKey:['servicesData'],
+    queryFn:ServicesData,
+  })
+
+  const serviceDatas = servideData?.data || [];
+  console.log(serviceDatas);
+  
+  // delete services 
+
+  const deleteMutation = useMutation({
+    mutationFn: serviceDelete,
+    onSuccess:()=>{
+      queryClient.invalidateQueries({queryKey:['servicesData']})
+      toast.success('service deleted successfully')
+    },
+    onError:(error:any)=>{
+      toast.error(error.message || 'failed to delte service')
+    },
+  })
+
+  const handelDelete =(id:string)=>{
+    deleteMutation.mutate(id)
+    
+  }
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -350,27 +377,22 @@ export function ServicesPage() {
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              {/* <TableBody>
-                {services && services.length > 0 ? (
-                  services.map((service) => (
+              <TableBody>
+                {serviceDatas && serviceDatas.length > 0 ? (
+                  serviceDatas.map((service) => (
                     <TableRow key={service._id}>
                       <TableCell>
                         <div className="flex items-start gap-3">
                           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                            {service.imagelink ? (
-                              <img
-                                src={getImageUrl(service.imagelink) || "/placeholder.svg"}
+                              <Image
+                                src={`${service.imageLink}`}
                                 alt={service.serviceTitle}
                                 className="w-full h-full object-cover rounded-lg"
-                                onError={(e) => {
-                                  e.currentTarget.src = "/placeholder.svg"
-                                }}
+                              width={100}
+                              height={100}
                               />
-                            ) : (
-                              <div className="w-8 h-8 bg-white/20 rounded"></div>
-                            )}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 max-w-60">
                             <h3 className="font-semibold text-gray-900 mb-1">{service.serviceTitle}</h3>
                             <p className="text-sm text-gray-600 line-clamp-2">{service.serviceDescription}</p>
                           </div>
@@ -380,7 +402,7 @@ export function ServicesPage() {
                         <span className="font-semibold">${service.price.toLocaleString()}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-gray-600">{formatDate(service.createdAt)}</span>
+                             {service.updatedAt}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -410,14 +432,14 @@ export function ServicesPage() {
                               <DialogHeader>
                                 <DialogTitle>Edit Service</DialogTitle>
                               </DialogHeader>
-                              <ServiceForm onSubmit={handleSubmit} defaultValues={service} />
+                             
                             </DialogContent>
                           </Dialog>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0"
-                            onClick={() => deleteMutation.mutate(service._id)}
+                            onClick={()=> handelDelete(service._id)}
                           >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
@@ -432,7 +454,7 @@ export function ServicesPage() {
                     </TableCell>
                   </TableRow>
                 )}
-              </TableBody> */}
+              </TableBody>
             </Table>
 
             {/* <div className="px-6 py-4 border-t">
@@ -447,37 +469,37 @@ export function ServicesPage() {
   )
 }
 
-function ServiceForm({
-  onSubmit,
-  defaultValues,
-}: {
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
-  defaultValues?: Service
-}) {
-  return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="serviceTitle">Service Name</Label>
-        <Input id="serviceTitle" name="serviceTitle" defaultValue={defaultValues?.serviceTitle} />
-      </div>
-      <div>
-        <Label htmlFor="serviceDescription">Description</Label>
-        <Textarea id="serviceDescription" name="serviceDescription" defaultValue={defaultValues?.serviceDescription} />
-      </div>
-      <div>
-        <Label htmlFor="price">Price</Label>
-        <Input id="price" name="price" type="number" defaultValue={defaultValues?.price} />
-      </div>
-      <div>
-        <Label htmlFor="image">Image</Label>
-        <Input id="image" name="image" type="file" accept="image/*" />
-        {defaultValues?.imagelink && (
-          <p className="text-sm text-gray-500 mt-1">Current image: {defaultValues.imagelink}</p>
-        )}
-      </div>
-      <Button type="submit" className="w-full">
-        {defaultValues ? "Update" : "Create"} Service
-      </Button>
-    </form>
-  )
-}
+// function ServiceForm({
+//   onSubmit,
+//   defaultValues,
+// }: {
+//   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
+//   defaultValues?: Service
+// }) {
+//   return (
+//     <form onSubmit={onSubmit} className="space-y-4">
+//       <div>
+//         <Label htmlFor="serviceTitle">Service Name</Label>
+//         <Input id="serviceTitle" name="serviceTitle" defaultValue={defaultValues?.serviceTitle} />
+//       </div>
+//       <div>
+//         <Label htmlFor="serviceDescription">Description</Label>
+//         <Textarea id="serviceDescription" name="serviceDescription" defaultValue={defaultValues?.serviceDescription} />
+//       </div>
+//       <div>
+//         <Label htmlFor="price">Price</Label>
+//         <Input id="price" name="price" type="number" defaultValue={defaultValues?.price} />
+//       </div>
+//       <div>
+//         <Label htmlFor="image">Image</Label>
+//         <Input id="image" name="image" type="file" accept="image/*" />
+//         {defaultValues?.imagelink && (
+//           <p className="text-sm text-gray-500 mt-1">Current image: {defaultValues.imagelink}</p>
+//         )}
+//       </div>
+//       <Button type="submit" className="w-full">
+//         {defaultValues ? "Update" : "Create"} Service
+//       </Button>
+//     </form>
+//   )
+// }
