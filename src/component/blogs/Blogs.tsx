@@ -224,7 +224,7 @@ export function BlogsPage() {
             <div key={blog._id} className="grid grid-cols-3 gap-4 p-4 items-center">
               {/* Blog Name Column */}
               <div className="flex items-start space-x-3">
-                <img
+                {/* <img
                   src={blog.image || "/placeholder.svg?height=60&width=80&query=blog+thumbnail"}
                   alt={blog.title}
                   className="w-20 h-15 object-cover rounded flex-shrink-0"
@@ -232,7 +232,7 @@ export function BlogsPage() {
                     const target = e.target as HTMLImageElement
                     target.src = "/blog-thumbnail.png"
                   }}
-                />
+                /> */}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-900 mb-1 line-clamp-2">{blog.title}</p>
                   <p className="text-sm text-gray-600 line-clamp-2">{blog.description}</p>

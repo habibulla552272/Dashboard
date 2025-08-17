@@ -110,6 +110,18 @@ export async function ServicesData() {
   }
 
 }
+export async function ServicesSingleData(id:string) {
+    
+    try{
+    const res= await api.get(`/services/${id}`)
+    return res.data;
+  }catch(error){
+    if(error instanceof Error){
+      throw new Error('Failed to fetch admin stats')
+    }
+  }
+
+}
 
 export async function serviceDelete(id:string) {
   try{
@@ -123,6 +135,30 @@ export async function serviceDelete(id:string) {
   
 }
 
+
+
+
+
+export async function serviceEdit(id:string,data:any,image?:File) {
+  try{
+      const formData=new FormData()
+      formData.append('data',JSON.stringify(data))
+      if(image){
+        formData.append('image',image)
+      }
+      const res= await api.put(`/services/${id}`,formData,{
+        headers:{
+           "Content-Type": "multipart/form-data",
+        }
+      })
+      return res.data
+  }catch(error:any){
+    
+      throw new Error(error.message ||'Failed to fetch admin stats')
+    
+  }
+  
+}
 
 
 
