@@ -38,16 +38,8 @@ const {data,isError,isLoading}=useQuery({
   queryKey:['statsData'],
   queryFn:stats,
 })
-console.log(data);
-console.log(isError);
-console.log(isLoading);
 
 const datas= data?.data || ''
-
-
-
-
-
   return (
     <Card>
       <CardHeader>

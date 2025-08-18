@@ -98,8 +98,27 @@ export async function categoryStats() {
 
 //Services data call
 
+// create service 
+export async function createService(data:any,image?:File) {
+    try{
+      const formData=new FormData();
+      formData.append('data',JSON.stringify(data))
+      if(image){
+        formData.append('image',image)
+      }
+      const res= await api.post('/services/create',formData,{
+        headers:{
+          'Content-Type':'multipart/form-data',
+        },
+      })
+      return res.data
+    }catch(error:any){
+      throw new Error(error.message || 'Failed to create service')
+    }
+  
+}
+
 export async function ServicesData() {
-    
     try{
     const res= await api.get('/services/get')
     return res.data;
@@ -108,10 +127,8 @@ export async function ServicesData() {
       throw new Error('Failed to fetch admin stats')
     }
   }
-
 }
 export async function ServicesSingleData(id:string) {
-    
     try{
     const res= await api.get(`/services/${id}`)
     return res.data;
@@ -128,17 +145,12 @@ export async function serviceDelete(id:string) {
       const respons= await api.delete(`/services/${id}`)
       return respons.data
   }catch(error:any){
-    
       throw new Error(error.message ||'Failed to fetch admin stats')
-    
   }
   
 }
 
-
-
-
-
+//service 
 export async function serviceEdit(id:string,data:any,image?:File) {
   try{
       const formData=new FormData()
@@ -161,6 +173,68 @@ export async function serviceEdit(id:string,data:any,image?:File) {
 }
 
 
+//strategy 
+
+export async function fetchStrategies(page = 1, limit = 10) {
+  try {
+    const response = await api.get(`/strategy/get?page=${page}&limit=${limit}`)
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch strategies")
+  }
+}
+// Fetch a specific strategy
+export async function fetchStrategy(id: string) {
+  try {
+    const response = await api.get(`/strategy/${id}`)
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch strategy")
+  }
+}
+
+
+// Update a specific strategy
+export async function updateStrategy(id: string, data: any) {
+  try {
+    const response = await api.put(`/strategy/${id}`, data)
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update strategy")
+  }
+}
+
+
+// Get user Strategies
+export async function fetchUserStrategies(page = 1, limit = 5) {
+  try {
+    const response = await api.get(`/strategy/my-strategy?page=${page}&limit=${limit}`)
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch user strategies")
+  }
+}
+
+
+export async function deleteStrategy(id: string) {
+  try {
+    const response = await api.delete(`/strategy/${id}`)
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to delete strategy")
+  }
+}
+
+export async function createStrategy(data: any) {
+  try {
+    const response = await api.post("/strategy/create", data)
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to create strategy")
+  }
+}
+
+
 
 
 
@@ -173,73 +247,73 @@ export async function serviceEdit(id:string,data:any,image?:File) {
 
 
 // Services API
-export const servicesApi = {
-  getAll: async (): Promise<Service[]> => {
-    const response = await fetch(`${API_BASE_URL}/services/get`);
-    if (!response.ok) throw new Error("Failed to fetch services");
-    return response.json();
-  },
+// export const servicesApi = {
+//   getAll: async (): Promise<Service[]> => {
+//     const response = await fetch(`${API_BASE_URL}/services/get`);
+//     if (!response.ok) throw new Error("Failed to fetch services");
+//     return response.json();
+//   },
 
-  create: async (serviceData: {
-    serviceTitle: string;
-    serviceDescription: string;
-    price: number;
-    category?: string;
-    status?: "active" | "inactive";
-    image?: File;
-  }): Promise<Service> => {
-    try {
-      const formData = new FormData();
-      formData.append("serviceTitle", serviceData.serviceTitle);
-      formData.append("serviceDescription", serviceData.serviceDescription);
-      formData.append("price", serviceData.price.toString());
+//   create: async (serviceData: {
+//     serviceTitle: string;
+//     serviceDescription: string;
+//     price: number;
+//     category?: string;
+//     status?: "active" | "inactive";
+//     image?: File;
+//   }): Promise<Service> => {
+//     try {
+//       const formData = new FormData();
+//       formData.append("serviceTitle", serviceData.serviceTitle);
+//       formData.append("serviceDescription", serviceData.serviceDescription);
+//       formData.append("price", serviceData.price.toString());
 
-      if (serviceData.category) {
-        formData.append("category", serviceData.category);
-      }
-      if (serviceData.status) {
-        formData.append("status", serviceData.status);
-      }
-      if (serviceData.image) {
-        formData.append("imagelink", serviceData.image);
-      }
+//       if (serviceData.category) {
+//         formData.append("category", serviceData.category);
+//       }
+//       if (serviceData.status) {
+//         formData.append("status", serviceData.status);
+//       }
+//       if (serviceData.image) {
+//         formData.append("imagelink", serviceData.image);
+//       }
 
-      const response = await fetch(`${API_BASE_URL}/services/create`, {
-        method: "POST",
-        body: formData, // Send as FormData instead of JSON
-      });
+//       const response = await fetch(`${API_BASE_URL}/services/create`, {
+//         method: "POST",
+//         body: formData, // Send as FormData instead of JSON
+//       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to create service: ${response.status} ${errorText}`
-        );
-      }
+//       if (!response.ok) {
+//         const errorText = await response.text();
+//         throw new Error(
+//           `Failed to create service: ${response.status} ${errorText}`
+//         );
+//       }
 
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  },
+//       const result = await response.json();
+//       return result;
+//     } catch (error) {
+//       throw error;
+//     }
+//   },
 
-  update: async (id: string, service: Partial<Service>): Promise<Service> => {
-    const response = await fetch(`${API_BASE_URL}/services/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(service),
-    });
-    if (!response.ok) throw new Error("Failed to update service");
-    return response.json();
-  },
+//   update: async (id: string, service: Partial<Service>): Promise<Service> => {
+//     const response = await fetch(`${API_BASE_URL}/services/${id}`, {
+//       method: "PUT",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(service),
+//     });
+//     if (!response.ok) throw new Error("Failed to update service");
+//     return response.json();
+//   },
 
-  delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/services/${id}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) throw new Error("Failed to delete service");
-  },
-};
+//   delete: async (id: string): Promise<void> => {
+//     const response = await fetch(`${API_BASE_URL}/services/${id}`, {
+//       method: "DELETE",
+//     });
+//     if (!response.ok) throw new Error("Failed to delete service");
+//   },
+// };
 
 // Payments API
 export const paymentsApi = {
@@ -312,4 +386,4 @@ export const staffingNeedApi = {
   },
 };
 
-export const createService = servicesApi.create;
+// export const createService = servicesApi.create;

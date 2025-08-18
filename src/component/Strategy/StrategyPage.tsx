@@ -1,8 +1,40 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Eye, Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchStrategies, deleteStrategy } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Trash2, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface StrategyEntry {
   _id: string
@@ -17,191 +49,233 @@ interface StrategyEntry {
 }
 
 export function StrategyPage() {
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+const [currentPage, setCurrentPage] = useState(1);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [selectedStrategy, setSelectedStrategy] = useState<any>(null);
+  const [response, setResponse] = useState("");
+  const queryClient = useQueryClient();
 
-  // Mock data matching the screenshot
-  const mockStrategies: StrategyEntry[] = [
-    {
-      _id: "1",
-      user: {
-        name: "Md.Habibulla",
-        email: "mdhabibulla.bdcalling@gmail.com",
-      },
-      companyName: "hakad",
-      dataStrategyFocusArea: "business data solutions",
-      dataStrategyNotes: "fkljdfjkl;asdf",
-      createdAt: "2025-08-16T12:18:00Z",
+  const { data: strategiesData, isLoading } = useQuery({
+    queryKey: ["strategies", currentPage],
+    queryFn: () => fetchStrategies(currentPage, 10),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteStrategy,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["strategies"] });
+      toast.success("Strategy deleted successfully");
     },
-    {
-      _id: "2",
-      user: {
-        name: "Zihadul Islam",
-        email: "zihadulislam.bdcalling@gmail.com",
-      },
-      companyName: "bdcalling",
-      dataStrategyFocusArea: "business data solutions",
-      dataStrategyNotes: "Data Strategy Notes & Requests Write.....",
-      createdAt: "2025-06-10T03:29:00Z",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete strategy");
     },
-  ]
+  });
 
-  const [strategies] = useState<StrategyEntry[]>(mockStrategies)
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
 
-  const totalPages = Math.ceil(strategies.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentStrategies = strategies.slice(startIndex, endIndex)
+  const handleSendResponse = () => {
+    if (!response.trim()) {
+      toast.error("Please enter a response");
+      return;
+    }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    })
+    // Here you would typically send the response via API
+    toast.success("Response sent successfully");
+    setResponse("");
+    setSelectedStrategy(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="grid gap-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  const handleView = (strategy: StrategyEntry) => {
-    console.log("[v0] Viewing strategy:", strategy)
-    // TODO: Implement view strategy functionality
-  }
+  const strategies = strategiesData?.data || [];
+  const meta = strategiesData
 
-  const handleEdit = (strategy: StrategyEntry) => {
-    console.log("[v0] Editing strategy:", strategy)
-    // TODO: Implement edit strategy functionality
-  }
-
-  const handleDelete = (strategyId: string) => {
-    console.log("[v0] Deleting strategy:", strategyId)
-    // TODO: Implement delete strategy functionality
-  }
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Strategy</h1>
-        <p className="text-sm text-gray-500">Dashboard &gt; Strategy Management</p>
+   
+     <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Strategy</h1>
+        <p className="text-gray-600 mt-1">Dashboard &gt; Strategy Management</p>
       </div>
 
-      {/* Strategy Table */}
-      <div className="bg-white rounded-lg border">
-        {/* Table Header */}
-        <div className="grid grid-cols-6 gap-4 p-4 border-b bg-gray-50 font-medium text-gray-700">
-          <div>User</div>
-          <div>Company Name</div>
-          <div>Data Strategy Focus Area</div>
-          <div>Data Strategy Notes & Requests</div>
-          <div>Time</div>
-          <div>Actions</div>
-        </div>
-
-        {/* Table Body */}
-        <div className="divide-y">
-          {currentStrategies.map((strategy) => (
-            <div key={strategy._id} className="grid grid-cols-6 gap-4 p-4 items-center">
-              {/* User Column */}
-              <div>
-                <p className="font-medium text-gray-900">{strategy.user.name}</p>
-                <p className="text-sm text-gray-500">{strategy.user.email}</p>
+      <Card>
+        <CardHeader>
+          <div className="grid grid-cols-12 gap-4 font-medium text-gray-600">
+            <div className="col-span-2">User</div>
+            <div className="col-span-2">Company Name</div>
+            <div className="col-span-2">Data Strategy Focus Area</div>
+            <div className="col-span-3">Data Strategy Notes & Requests</div>
+            <div className="col-span-2">Time</div>
+            <div className="col-span-1">Actions</div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="border-t border-gray-200 mb-4"></div>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {strategies.map((strategy: any) => (
+            <div
+              key={strategy._id}
+              className="grid grid-cols-12 gap-4 items-center py-4 border-b last:border-b-0"
+            >
+              <div className="col-span-2">
+                <div>
+                  <p className="font-medium text-gray-900">{strategy.name}</p>
+                  <p className="text-sm text-gray-600">{strategy.email}</p>
+                </div>
               </div>
-
-              {/* Company Name Column */}
-              <div>
-                <p className="text-gray-900">{strategy.companyName}</p>
+              <div className="col-span-2 text-sm text-gray-900">
+                {strategy.companyName}
               </div>
-
-              {/* Data Strategy Focus Area Column */}
-              <div>
-                <p className="text-gray-900">{strategy.dataStrategyFocusArea}</p>
+              <div className="col-span-2 text-sm text-gray-900">
+                {strategy.dataStrategy}
               </div>
-
-              {/* Data Strategy Notes & Requests Column */}
-              <div>
-                <p className="text-gray-900 truncate max-w-xs" title={strategy.dataStrategyNotes}>
-                  {strategy.dataStrategyNotes}
-                </p>
+              <div className="col-span-3 text-sm text-gray-600">
+                <p className="line-clamp-2">{strategy.strategyDescription}</p>
               </div>
-
-              {/* Time Column */}
-              <div>
-                <p className="text-sm text-gray-600">{formatDate(strategy.createdAt)}</p>
+              <div className="col-span-2 text-sm text-gray-600">
+                {new Date(strategy.createdAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </div>
-
-              {/* Actions Column */}
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleView(strategy)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  <Eye className="h-4 w-4 text-gray-600" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEdit(strategy)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  <Edit className="h-4 w-4 text-gray-600" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(strategy._id)}
-                  className="h-8 w-8 p-0 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4 text-red-600" />
-                </Button>
+              <div className="col-span-1 flex items-center gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedStrategy(strategy)}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Data Strategy Notes & Requests</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          {selectedStrategy?.strategyDescription}
+                        </p>
+                      </div>
+                      <div>
+                        <Label htmlFor="response">Answer</Label>
+                        <Textarea
+                          id="response"
+                          placeholder="Write......"
+                          value={response}
+                          onChange={(e) => setResponse(e.target.value)}
+                          rows={4}
+                        />
+                      </div>
+                      <Button
+                        onClick={handleSendResponse}
+                        className="w-full bg-blue-500 hover:bg-blue-600"
+                      >
+                        Send
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete the strategy.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(strategy._id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           ))}
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-          <p className="text-sm text-gray-600">
-            Showing {startIndex + 1} to {Math.min(endIndex, strategies.length)} of {strategies.length} results
-          </p>
-
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className={currentPage === page ? "bg-blue-600 hover:bg-blue-700" : ""}
+      {meta.totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                className={
+                  currentPage === 1
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+              />
+            </PaginationItem>
+            {[...Array(meta.totalPages)].map((_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink
+                  onClick={() => setCurrentPage(i + 1)}
+                  isActive={currentPage === i + 1}
+                  className="cursor-pointer"
                 >
-                  {page}
-                </Button>
-              ))}
-            </div>
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() =>
+                  setCurrentPage(Math.min(meta.totalPages, currentPage + 1))
+                }
+                className={
+                  currentPage === meta.totalPages
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+      <div className="text-sm text-gray-600">
+        Showing {(currentPage - 1) * 10 + 1} to{" "}
+        {Math.min(currentPage * 10, meta.totalItems)} of {meta.totalItems} results
       </div>
     </div>
   )

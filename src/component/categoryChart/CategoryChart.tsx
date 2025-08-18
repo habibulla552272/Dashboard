@@ -56,29 +56,34 @@ export function CategoryChart() {
     queryFn: categoryStats,
   });
 
+
+
   const rawData: Category[] = data?.data ?? [];
+
+
 
   // Process API data into percentages + assign colors
   const pieChartData: PieChartItem[] =
     rawData.length > 0
       ? rawData.map((item, index) => {
-          const totalBookings = rawData.reduce(
-            (sum, cat) => sum + cat.bookings,
-            0
-          );
-          const percentage =
-            totalBookings > 0
-              ? parseFloat(((item.bookings / totalBookings) * 100).toFixed(1))
-              : 0;
+        const totalBookings = rawData.reduce(
+          (sum, cat) => sum + cat.bookings,
+          0
+        );
+        const percentage =
+          totalBookings > 0
+            ? parseFloat(((item.bookings / totalBookings) * 100).toFixed(1))
+            : 0;
 
-          return {
-            name: item.category,
-            value: percentage,
-            bookings: item.bookings,
-            color: PIE_COLORS[index % PIE_COLORS.length],
-          };
-        })
+        return {
+          name: item.category,
+          value: percentage,
+          bookings: item.bookings,
+          color: PIE_COLORS[index % PIE_COLORS.length],
+        };
+      })
       : [];
+
 
   return (
     <Card>
