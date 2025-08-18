@@ -22,7 +22,7 @@ export function RichTextEditor({ value, onChange, placeholder, control, name, er
             [{ header: [1, 2, 3, 4, 5, 6, false] }],
             ["bold", "italic", "underline", "strike"],
             [{ color: [] }, { background: [] }],
-            [{ list: "ordered" }, { list: "bullet" }],
+            [{ list: "ordered" }, { list: "bullet" }], // ✅ bullet is valid in toolbar
             [{ indent: "-1" }, { indent: "+1" }],
             [{ align: [] }],
             ["link", "image"],
@@ -40,8 +40,7 @@ export function RichTextEditor({ value, onChange, placeholder, control, name, er
         "strike",
         "color",
         "background",
-        "list",
-        "bullet",
+        "list", // ✅ only "list", no "bullet"
         "indent",
         "align",
         "link",

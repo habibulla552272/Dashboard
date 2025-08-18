@@ -296,7 +296,55 @@ export async function deleteBlog(id: string) {
 }
 
 
+//solution api 
 
+export async function solutionData() {
+
+  try{
+   const res= await api.get('/solution/get');
+   return res.data;
+  }catch(error:any){
+    throw new Error(error.message || 'Failed to Fetch Solution data')
+  }
+  
+}
+
+export async function updateSolution(id:string,data:any) {
+  try{
+    const res = await api.put(`/solution/${id}`,data)
+    return res.data
+  }catch(error:any){
+    throw new Error(error.message || 'Failed to Update Solution');
+  }
+  
+}
+
+
+// delete solution 
+
+export async function delteSolution(id:string) {
+  try{
+    const respons= await api.delete(`/solution/${id}`)
+    return respons.data;
+  }catch(error:any){
+    throw new Error(error.message || 'Failed to delete solution')
+  }
+  
+}
+
+
+//payment api 
+
+
+export async function fetchPayment() {
+
+  try{
+    const res= await api.get('/payment');
+    return res.data;
+  }catch(error:any){
+    throw new Error(error.message || 'Failed to fetch payment')
+  }
+}
 
 
 

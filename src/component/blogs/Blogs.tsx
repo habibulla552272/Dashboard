@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -20,71 +20,76 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, Edit, Trash2, Plus } from "lucide-react";
+import { Eye, Edit, Trash2, Plus, Upload } from "lucide-react";
 import {
+  fetchBlog,
   fetchBlogs,
   serviceDelete,
-  serviceEdit,
-  ServicesData,
-  ServicesSingleData,
+  updateBlog,
   type Service,
 } from "@/lib/api";
 import { toast } from "sonner";
 import Image from "next/image";
 import Add from "./add/Add";
-
-
+import { RichTextEditor } from "./editor/RichTextEditor";
 
 
 interface Blog {
-  _id: string
-  title: string
-  description: string
-  content: string
-  image?: string
-  createdAt: string
+  _id: string;
+  blogTitle: string;
+  blogDescription: string;
+  imageLink?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function BlogsPage() {
-    const [currentPage, setCurrentPage] = useState(1);
-    const [editingService, setEditingService] = useState<Service | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // state for view details dialog
+  // edit dialog state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    blogTitle: "",
+    blogDescription: "",
+  });
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // view details dialog
   const [viewId, setViewId] = useState<string | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
-  // fetch all services
+  // fetch all blogs
   const { data: blogda, isLoading } = useQuery({
-    queryKey: ["servicesData"],
+    queryKey: ["blogsData"],
     queryFn: fetchBlogs,
   });
   const blogsData = blogda?.data || [];
 
-  // fetch single service only when viewId exists
+  // fetch single blog when viewing
   const { data: viewDa, isFetching: viewLoading } = useQuery({
-    queryKey: ["singleservice", viewId],
-    queryFn: () => ServicesSingleData(viewId as string),
-    enabled: !!viewId, // only run when viewId is set
+    queryKey: ["singleBlog", viewId],
+    queryFn: () => fetchBlog(viewId as string),
+    enabled: !!viewId,
   });
-  const viewData = viewDa?.data || [];
+  const viewData = viewDa?.data || null;
 
-  // delete service
+  // delete
   const deleteMutation = useMutation({
     mutationFn: serviceDelete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["servicesData"] });
-      toast.success("Service deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["blogsData"] });
+      toast.success("Blog deleted successfully");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to delete service");
+      toast.error(error.message || "Failed to delete blog");
     },
   });
 
-  // update service
+  // update
   const updateMutation = useMutation({
     mutationFn: async ({
       id,
@@ -94,84 +99,114 @@ export function BlogsPage() {
       id: string;
       data: any;
       image?: File;
-    }) => await serviceEdit(id, data, image),
+    }) => await updateBlog(id, data, image),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["servicesData"] });
-      setEditingService(null);
-      toast.success("Service updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["blogsData"] });
+      setIsEditDialogOpen(false);
+      toast.success("Blog updated successfully");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to update service");
+      toast.error(error.message || "Failed to update blog");
     },
   });
 
+  // handlers
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id);
-  };
-
-  const handleUpdateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!editingService) return;
-
-    const formData = new FormData(e.currentTarget);
-    const updatedData = {
-      serviceTitle: formData.get("serviceTitle"),
-      serviceDescription: formData.get("serviceDescription"),
-      price: Number(formData.get("price")),
-    };
-
-    updateMutation.mutate({
-      id: editingService._id,
-      data: updatedData,
-      image: selectedImage || undefined,
-    });
   };
 
   const handleView = (id: string) => {
     setViewId(id);
     setViewOpen(true);
   };
- 
+
+  const handleEdit = (blog: Blog) => {
+    setEditingId(blog._id);
+    setEditFormData({
+      blogTitle: blog.blogTitle,
+      blogDescription: blog.blogDescription,
+    });
+    setEditImagePreview(blog.imageLink || null);
+    setEditImageFile(null);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setEditFormData({
+      ...editFormData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleEditDescriptionChange = (value: string) => {
+    setEditFormData({
+      ...editFormData,
+      blogDescription: value,
+    });
+  };
+
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditImageFile(file);
+      setEditImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingId) return;
+
+    updateMutation.mutate({
+      id: editingId,
+      data: {
+        blogTitle: editFormData.blogTitle,
+        blogDescription: editFormData.blogDescription,
+      },
+      image: editImageFile || undefined,
+    });
+  };
 
   return (
-     <section>
-      <div className={`p-6 space-y-6 ${showAddForm ? 'hidden' :'block'}`}>
+    <section>
+      <div className={`p-6 space-y-6 ${showAddForm ? "hidden" : "block"}`}>
         <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Services</h1>
-          <p className="text-gray-600 mt-1">Dashboard &gt; Services</p>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Blogs</h1>
+            <p className="text-gray-600 mt-1">Dashboard &gt; Blogs</p>
+          </div>
+          <Button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {showAddForm ? "Cancel" : "Add Blog"}
+          </Button>
         </div>
-        <Button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-blue-500 hover:bg-blue-600"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          {showAddForm ? "Cancel" : "Add Service"}
-        </Button>
-      </div>
 
         {/* TABLE */}
         <div className="bg-white rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[400px]">Service</TableHead>
-                
+                <TableHead className="w-[400px]">Blog</TableHead>
                 <TableHead>Added</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {blogsData.length > 0 ? (
-                blogsData.map((service) => (
-                  <TableRow key={service._id}>
+                blogsData.map((blog: Blog) => (
+                  <TableRow key={blog._id}>
                     <TableCell>
                       <div className="flex items-start gap-3">
                         <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-                          {service.imageLink ? (
+                          {blog.imageLink ? (
                             <Image
-                              src={service.imageLink}
-                              alt={service.serviceTitle || "Service image"}
+                              src={blog.imageLink}
+                              alt={blog.blogTitle || "Blog image"}
                               className="object-cover"
                               width={64}
                               height={64}
@@ -183,118 +218,37 @@ export function BlogsPage() {
                           )}
                         </div>
                         <div>
-                          <h3 className="font-semibold">
-                            {service.serviceTitle}
-                          </h3>
+                          <h3 className="font-semibold">{blog.blogTitle}</h3>
                           <p className="text-sm text-gray-600 line-clamp-2 max-w-40">
-                            {service.serviceDescription}
+                            {blog.blogDescription}
                           </p>
                         </div>
                       </div>
                     </TableCell>
-                  
-                    <TableCell>{service.updatedAt}</TableCell>
+
+                    <TableCell>
+                      {new Date(blog.updatedAt).toLocaleDateString()}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {/* View button */}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleView(service._id)}
-                          className="h-8 w-8 p-0 hover:bg-gray-100"
+                          onClick={() => handleView(blog._id)}
                         >
                           <Eye className="h-4 w-4 text-gray-600" />
                         </Button>
-
-                        {/* Edit button */}
-                        <Dialog
-                          open={editingService?._id === service._id}
-                          onOpenChange={(open) =>
-                            !open && setEditingService(null)
-                          }
-                        >
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditingService(service)}
-                            >
-                              <Edit className="w-4 h-4 text-gray-500" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Edit Service</DialogTitle>
-                            </DialogHeader>
-
-                            {/* EDIT FORM */}
-                            <form
-                              onSubmit={handleUpdateSubmit}
-                              className="space-y-4"
-                            >
-                              <div>
-                                <Label htmlFor="serviceTitle">Service Name</Label>
-                                <Input
-                                  id="serviceTitle"
-                                  name="serviceTitle"
-                                  defaultValue={editingService?.serviceTitle}
-                                  required
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="price">Price</Label>
-                                <Input
-                                  id="price"
-                                  name="price"
-                                  type="number"
-                                  defaultValue={editingService?.price}
-                                  required
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="serviceDescription">
-                                  Description
-                                </Label>
-                                <Textarea
-                                  id="serviceDescription"
-                                  name="serviceDescription"
-                                  defaultValue={
-                                    editingService?.serviceDescription
-                                  }
-                                  required
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="image">Image</Label>
-                                <Input
-                                  id="image"
-                                  name="image"
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) =>
-                                    setSelectedImage(e.target.files?.[0] || null)
-                                  }
-                                />
-                              </div>
-
-                              <Button
-                                type="submit"
-                                className="w-full bg-blue-500 hover:bg-blue-600"
-                                disabled={updateMutation.isPending}
-                              >
-                                {updateMutation.isPending
-                                  ? "Updating..."
-                                  : "Update Service"}
-                              </Button>
-                            </form>
-                          </DialogContent>
-                        </Dialog>
-
-                        {/* Delete button */}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(service._id)}
+                          onClick={() => handleEdit(blog)}
+                        >
+                          <Edit className="w-4 h-4 text-gray-500" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(blog._id)}
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
@@ -308,7 +262,7 @@ export function BlogsPage() {
                     colSpan={4}
                     className="text-center py-8 text-gray-500"
                   >
-                    No services found. Add your first service to get started.
+                    No blogs found. Add your first blog to get started.
                   </TableCell>
                 </TableRow>
               )}
@@ -316,58 +270,136 @@ export function BlogsPage() {
           </Table>
         </div>
 
-        {/* VIEW DETAILS DIALOG */}
+        {/* VIEW DETAILS */}
         <Dialog open={viewOpen} onOpenChange={setViewOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Service Details</DialogTitle>
+              <DialogTitle>Blog Details</DialogTitle>
             </DialogHeader>
-
             {viewLoading ? (
               <p className="text-center text-gray-500">Loading...</p>
             ) : viewData ? (
               <div className="space-y-4">
-                <div className="flex gap-4">
-                  {viewData.imageLink ? (
-                    <Image
-                      src={viewData.imageLink}
-                      alt={viewData.serviceTitle || "Service image"}
-                      width={100}
-                      height={100}
-                      className="rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="w-[100px] h-[100px] flex items-center justify-center rounded-lg bg-gray-100 text-gray-400">
-                      No Image
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="font-semibold text-lg">
-                      {viewData.serviceTitle}
-                    </h3>
-                    <p className="text-gray-600">{viewData.serviceDescription}</p>
-                    <p className="text-blue-600 font-bold mt-2">
-                      ${viewData.price}
-                    </p>
+                <h3 className="font-semibold text-lg">
+                  {viewData.blogTitle}
+                </h3>
+                <p>{viewData.blogDescription}</p>
+                {viewData.imageLink ? (
+                  <Image
+                    src={viewData.imageLink}
+                    alt={viewData.blogTitle}
+                    width={200}
+                    height={200}
+                    className="rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-[200px] h-[200px] flex items-center justify-center rounded-lg bg-gray-100 text-gray-400">
+                    No Image
                   </div>
-                </div>
-                <p className="text-sm text-gray-500">
-                  Added on: {new Date(viewData.updatedAt).toLocaleString()}
-                </p>
+                )}
               </div>
             ) : (
-              <p className="text-center text-gray-500">
-                Failed to load service details
-              </p>
+              <p className="text-center text-gray-500">Failed to load blog</p>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* EDIT BLOG DIALOG */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Blog</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              <div className="grid grid-cols-3 gap-6">
+                <div className="col-span-2 space-y-4">
+                  <div>
+                    <Label htmlFor="edit-blogTitle">Blog Title</Label>
+                    <Input
+                      id="edit-blogTitle"
+                      name="blogTitle"
+                      value={editFormData.blogTitle}
+                      onChange={handleEditInputChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-blogDescription">Blog Content</Label>
+                    <div className="mt-2">
+                      <RichTextEditor
+                        value={editFormData.blogDescription}
+                        onChange={handleEditDescriptionChange}
+                        placeholder="Write your blog content here..."
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <Label>Blog Image</Label>
+                  <div className="mt-2 space-y-4">
+                    <div className="border rounded-lg overflow-hidden">
+                      {editImagePreview ? (
+                        <Image
+                          src={editImagePreview}
+                          alt="Preview"
+                          width={300}
+                          height={200}
+                          className="w-full h-48 object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">
+                            No image selected
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() =>
+                        document.getElementById("edit-blog-image-upload")?.click()
+                      }
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Change Image
+                    </Button>
+                    <input
+                      id="edit-blog-image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditImageChange}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-blue-500 hover:bg-blue-600"
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? "Updating..." : "Update Blog"}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className={`${showAddForm ? 'block' : 'hidden'}`}>
+      <div className={`${showAddForm ? "block" : "hidden"}`}>
         <Add showAddForm={showAddForm} setShowAddForm={setShowAddForm} />
       </div>
-
     </section>
-  )
+  );
 }

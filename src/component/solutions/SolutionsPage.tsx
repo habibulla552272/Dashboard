@@ -1,32 +1,40 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Edit, Trash2, ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { toast } from "sonner"
-
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Edit, Trash2, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { delteSolution, solutionData, updateSolution } from "@/lib/api";
+import { error } from "console";
 
 interface Solution {
-  _id: string
-  title: string
-  description: string
-  createdAt: string
+  _id: string;
+  solutionName: string;
+  solutionDescription: string;
+  updatedAt: string;
+  createdAt: string;
 }
 
 export function SolutionsPage() {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [isAddOpen, setIsAddOpen] = useState(false)
-  const [isEditOpen, setIsEditOpen] = useState(false)
-  const [editingSolution, setEditingSolution] = useState<Solution | null>(null)
-  const itemsPerPage = 10
-
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingSolution, setEditingSolution] = useState<Solution | null>(null);
+  const itemsPerPage = 10;
+  const queryClient = useQueryClient();
   // Mock data matching the screenshot
   const mockSolutions: Solution[] = [
     {
@@ -35,14 +43,52 @@ export function SolutionsPage() {
       description: "Do not share your credentials to anyone. Never",
       createdAt: "2025-06-10T15:42:00Z",
     },
-  ]
+  ];
 
-  const [solutions, setSolutions] = useState<Solution[]>(mockSolutions)
+  // solution data fetch use tanstack
 
-  const totalPages = Math.ceil(solutions.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentSolutions = solutions.slice(startIndex, endIndex)
+  const {
+    data: solution,
+    isLoading,
+    isEnabled,
+  } = useQuery({
+    queryKey: ["solutiondata"],
+    queryFn: solutionData,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      updateSolution(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey:['solutiondata']})
+      toast.success("Blog update succesfully");
+      setIsEditOpen(false);
+      setEditingSolution(null);
+     
+      setEditingSolution(null);
+    },
+    onError:(error:any)=>{
+      toast.error(error.message||'Failed to update solution');
+    }
+  });
+
+  const deleteMutaion= useMutation({
+    mutationFn: delteSolution,
+    onSuccess:()=>{
+      queryClient.invalidateQueries({queryKey:['solutiondata']})
+      toast.success("Solution deleted successfully")
+    },
+    onError:(error:any)=>{
+      toast.error(error.message|| 'Failed to delete solution')
+    }
+  })
+
+  const solutiondata = solution?.data || [];
+
+  const [solutions, setSolutions] = useState<Solution[]>(mockSolutions);
+  const totalPages = Math.ceil(solutions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("en-US", {
@@ -52,60 +98,57 @@ export function SolutionsPage() {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-    })
-  }
+    });
+  };
 
   const handleAddSolution = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     const newSolution: Solution = {
       _id: Date.now().toString(),
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       createdAt: new Date().toISOString(),
-    }
+    };
 
-    setSolutions([...solutions, newSolution])
-    setIsAddOpen(false)
-    toast({ title: "Solution added successfully" })
-    console.log("[v0] Added new solution:", newSolution)
-  }
+    setSolutions([...solutions, newSolution]);
+    setIsAddOpen(false);
+    toast({ title: "Solution added successfully" });
+    console.log("[v0] Added new solution:", newSolution);
+  };
 
   const handleEditSolution = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!editingSolution) return
+    e.preventDefault();
+    if (!editingSolution) return;
 
-    const formData = new FormData(e.currentTarget)
-    const updatedSolution: Solution = {
+    const formData = new FormData(e.currentTarget);
+    const data: Solution = {
       ...editingSolution,
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-    }
+      solutionName: formData.get("solutionName") as string,
+      solutionDescription: formData.get("solutionDiscription") as string,
+    };
 
-    setSolutions(solutions.map((s) => (s._id === editingSolution._id ? updatedSolution : s)))
-    setIsEditOpen(false)
-    setEditingSolution(null)
-    toast({ title: "Solution updated successfully" })
-    console.log("[v0] Updated solution:", updatedSolution)
-  }
+    updateMutation.mutate({ id: editingSolution._id, data });
+  };
 
   const handleEdit = (solution: Solution) => {
-    setEditingSolution(solution)
-    setIsEditOpen(true)
-  }
+    setEditingSolution(solution);
+    setIsEditOpen(true);
+  };
 
-  const handleDelete = (solutionId: string) => {
-    setSolutions(solutions.filter((s) => s._id !== solutionId))
-    toast({ title: "Solution deleted successfully" })
-    console.log("[v0] Deleted solution:", solutionId)
-  }
+  const handleDelete = (id: string) => {
+   deleteMutaion.mutate(id)
+   
+  };
 
   return (
     <div className="p-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Solutions</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            Solutions
+          </h1>
           <p className="text-sm text-gray-500">Dashboard &gt; Solutions</p>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -122,7 +165,12 @@ export function SolutionsPage() {
             <form onSubmit={handleAddSolution} className="space-y-4">
               <div>
                 <Label htmlFor="add-title">Solution Title</Label>
-                <Input id="add-title" name="title" required placeholder="Enter solution title" />
+                <Input
+                  id="add-title"
+                  name="title"
+                  required
+                  placeholder="Enter solution title"
+                />
               </div>
               <div>
                 <Label htmlFor="add-description">Description</Label>
@@ -134,7 +182,10 @@ export function SolutionsPage() {
                   rows={3}
                 />
               </div>
-              <Button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-600">
+              <Button
+                type="submit"
+                className="w-full bg-cyan-500 hover:bg-cyan-600"
+              >
                 Add Solution
               </Button>
             </form>
@@ -158,17 +209,26 @@ export function SolutionsPage() {
 
         {/* Table Body */}
         <div className="divide-y">
-          {currentSolutions.map((solution) => (
-            <div key={solution._id} className="grid grid-cols-3 gap-4 p-4 items-center">
+          {solutiondata.map((solution: Solution) => (
+            <div
+              key={solution._id}
+              className="grid grid-cols-3 gap-4 p-4 items-center"
+            >
               {/* Solution Column */}
               <div>
-                <p className="font-medium text-gray-900 mb-1">{solution.title}</p>
-                <p className="text-sm text-gray-600">{solution.description}</p>
+                <p className="font-medium text-gray-900 mb-1">
+                  {solution.solutionName}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {solution.solutionDescription}
+                </p>
               </div>
 
               {/* Added Column */}
               <div>
-                <p className="text-sm text-gray-600">{formatDate(solution.createdAt)}</p>
+                <p className="text-sm text-gray-600">
+                  {formatDate(solution.createdAt)}
+                </p>
               </div>
 
               {/* Actions Column */}
@@ -197,7 +257,8 @@ export function SolutionsPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between p-4 border-t bg-gray-50">
           <p className="text-sm text-gray-600">
-            Showing {startIndex + 1} to {Math.min(endIndex, solutions.length)} of {solutions.length} results
+            Showing {startIndex + 1} to {Math.min(endIndex, solutions.length)}{" "}
+            of {solutions.length} results
           </p>
 
           <div className="flex items-center space-x-2">
@@ -211,23 +272,31 @@ export function SolutionsPage() {
             </Button>
 
             <div className="flex items-center space-x-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className={currentPage === page ? "bg-blue-600 hover:bg-blue-700" : ""}
-                >
-                  {page}
-                </Button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className={
+                      currentPage === page
+                        ? "bg-blue-600 hover:bg-blue-700"
+                        : ""
+                    }
+                  >
+                    {page}
+                  </Button>
+                )
+              )}
             </div>
 
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
               disabled={currentPage === totalPages}
             >
               <ChevronRight className="h-4 w-4" />
@@ -244,32 +313,35 @@ export function SolutionsPage() {
           </DialogHeader>
           <form onSubmit={handleEditSolution} className="space-y-4">
             <div>
-              <Label htmlFor="edit-title">Solution Title</Label>
+              <Label htmlFor="edit-title">Solution Name</Label>
               <Input
                 id="edit-title"
-                name="title"
+                name="solutionName"
                 required
-                defaultValue={editingSolution?.title}
+                defaultValue={editingSolution?.solutionName}
                 placeholder="Enter solution title"
               />
             </div>
             <div>
-              <Label htmlFor="edit-description">Description</Label>
+              <Label htmlFor="edit-description">Solution Description</Label>
               <Textarea
                 id="edit-description"
-                name="description"
+                name="solutionDiscription"
                 required
-                defaultValue={editingSolution?.description}
+                defaultValue={editingSolution?.solutionDescription}
                 placeholder="Enter solution description"
                 rows={3}
               />
             </div>
-            <Button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-600">
+            <Button
+              type="submit"
+              className="w-full bg-cyan-500 hover:bg-cyan-600"
+            >
               Update Solution
             </Button>
           </form>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
