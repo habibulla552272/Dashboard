@@ -1,15 +1,39 @@
 "use client"
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Eye, Edit, Trash2, Plus } from "lucide-react";
+import {
+  fetchBlogs,
+  serviceDelete,
+  serviceEdit,
+  ServicesData,
+  ServicesSingleData,
+  type Service,
+} from "@/lib/api";
+import { toast } from "sonner";
+import Image from "next/image";
+import Add from "./add/Add";
 
-import type React from "react"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus, Upload } from "lucide-react"
-import { toast } from "sonner"
 
 
 interface Blog {
@@ -22,370 +46,328 @@ interface Blog {
 }
 
 export function BlogsPage() {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [isAddOpen, setIsAddOpen] = useState(false)
-  const [isEditOpen, setIsEditOpen] = useState(false)
-  const [editingBlog, setEditingBlog] = useState<Blog | null>(null)
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string>("")
-  const itemsPerPage = 10
+    const [currentPage, setCurrentPage] = useState(1);
+    const [editingService, setEditingService] = useState<Service | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
+  // state for view details dialog
+  const [viewId, setViewId] = useState<string | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
 
-  // Mock data matching the screenshot
-  const mockBlogs: Blog[] = [
-    {
-      _id: "1",
-      title: "Morskie Oko in the Tatra Mountains",
-      description:
-        "Escape to Serenity: A Glimpse of Morskie Oko in the Tatra Mountains Sometimes, an image arrives that ...",
-      content: "Full blog content here...",
-      image: "/mountain-landscape-blog.png",
-      createdAt: "2025-06-11T00:00:00Z",
+  const queryClient = useQueryClient();
+
+  // fetch all services
+  const { data: blogda, isLoading } = useQuery({
+    queryKey: ["servicesData"],
+    queryFn: fetchBlogs,
+  });
+  const blogsData = blogda?.data || [];
+
+  // fetch single service only when viewId exists
+  const { data: viewDa, isFetching: viewLoading } = useQuery({
+    queryKey: ["singleservice", viewId],
+    queryFn: () => ServicesSingleData(viewId as string),
+    enabled: !!viewId, // only run when viewId is set
+  });
+  const viewData = viewDa?.data || [];
+
+  // delete service
+  const deleteMutation = useMutation({
+    mutationFn: serviceDelete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["servicesData"] });
+      toast.success("Service deleted successfully");
     },
-    {
-      _id: "2",
-      title: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec venenatis tellus in volutpat molestie...",
-      content: "Full blog content here...",
-      image: "/business-meeting-blog.png",
-      createdAt: "2025-06-10T00:00:00Z",
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete service");
     },
-  ]
+  });
 
-  const [blogs, setBlogs] = useState<Blog[]>(mockBlogs)
+  // update service
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+      image,
+    }: {
+      id: string;
+      data: any;
+      image?: File;
+    }) => await serviceEdit(id, data, image),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["servicesData"] });
+      setEditingService(null);
+      toast.success("Service updated successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update service");
+    },
+  });
 
-  const totalPages = Math.ceil(blogs.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentBlogs = blogs.slice(startIndex, endIndex)
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-      year: "numeric",
-    })
-  }
+  const handleUpdateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingService) return;
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSelectedImage(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
+    const formData = new FormData(e.currentTarget);
+    const updatedData = {
+      serviceTitle: formData.get("serviceTitle"),
+      serviceDescription: formData.get("serviceDescription"),
+      price: Number(formData.get("price")),
+    };
 
-  const handleAddBlog = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const newBlog: Blog = {
-      _id: Date.now().toString(),
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-      content: formData.get("content") as string,
-      image: imagePreview || "/blog-thumbnail.png",
-      createdAt: new Date().toISOString(),
-    }
+    updateMutation.mutate({
+      id: editingService._id,
+      data: updatedData,
+      image: selectedImage || undefined,
+    });
+  };
 
-    setBlogs([...blogs, newBlog])
-    setIsAddOpen(false)
-    setSelectedImage(null)
-    setImagePreview("")
-    toast({ title: "Blog added successfully" })
-    console.log("[v0] Added new blog:", newBlog)
-  }
-
-  const handleEditBlog = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!editingBlog) return
-
-    const formData = new FormData(e.currentTarget)
-    const updatedBlog: Blog = {
-      ...editingBlog,
-      title: formData.get("title") as string,
-      description: formData.get("description") as string,
-      content: formData.get("content") as string,
-      image: imagePreview || editingBlog.image,
-    }
-
-    setBlogs(blogs.map((blog) => (blog._id === editingBlog._id ? updatedBlog : blog)))
-    setIsEditOpen(false)
-    setEditingBlog(null)
-    setSelectedImage(null)
-    setImagePreview("")
-    toast({ title: "Blog updated successfully" })
-    console.log("[v0] Updated blog:", updatedBlog)
-  }
-
-  const handleView = (blog: Blog) => {
-    console.log("[v0] Viewing blog:", blog)
-    // TODO: Implement view blog functionality
-  }
-
-  const handleEdit = (blog: Blog) => {
-    setEditingBlog(blog)
-    setImagePreview(blog.image || "")
-    setIsEditOpen(true)
-  }
-
-  const handleDelete = (blogId: string) => {
-    setBlogs(blogs.filter((blog) => blog._id !== blogId))
-    toast({ title: "Blog deleted successfully" })
-    console.log("[v0] Deleted blog:", blogId)
-  }
+  const handleView = (id: string) => {
+    setViewId(id);
+    setViewOpen(true);
+  };
+ 
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+     <section>
+      <div className={`p-6 space-y-6 ${showAddForm ? 'hidden' :'block'}`}>
+        <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Blogs</h1>
-          <p className="text-sm text-gray-500">Dashboard &gt; Blogs</p>
+          <h1 className="text-3xl font-bold text-gray-900">Services</h1>
+          <p className="text-gray-600 mt-1">Dashboard &gt; Services</p>
         </div>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Blog
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New Blog</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddBlog} className="space-y-4">
-              <div>
-                <Label htmlFor="add-title">Blog Title</Label>
-                <Input id="add-title" name="title" required placeholder="Enter blog title" />
-              </div>
-              <div>
-                <Label htmlFor="add-description">Description</Label>
-                <Textarea
-                  id="add-description"
-                  name="description"
-                  required
-                  placeholder="Enter blog description"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="add-content">Content</Label>
-                <Textarea id="add-content" name="content" required placeholder="Enter blog content" rows={5} />
-              </div>
-              <div>
-                <Label htmlFor="add-image">Blog Image</Label>
-                <div className="mt-2">
-                  <Input id="add-image" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById("add-image")?.click()}
-                    className="w-full"
+        <Button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="bg-blue-500 hover:bg-blue-600"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          {showAddForm ? "Cancel" : "Add Service"}
+        </Button>
+      </div>
+
+        {/* TABLE */}
+        <div className="bg-white rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[400px]">Service</TableHead>
+                
+                <TableHead>Added</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {blogsData.length > 0 ? (
+                blogsData.map((service) => (
+                  <TableRow key={service._id}>
+                    <TableCell>
+                      <div className="flex items-start gap-3">
+                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                          {service.imageLink ? (
+                            <Image
+                              src={service.imageLink}
+                              alt={service.serviceTitle || "Service image"}
+                              className="object-cover"
+                              width={64}
+                              height={64}
+                            />
+                          ) : (
+                            <span className="text-gray-400 text-xs">
+                              No Image
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">
+                            {service.serviceTitle}
+                          </h3>
+                          <p className="text-sm text-gray-600 line-clamp-2 max-w-40">
+                            {service.serviceDescription}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                  
+                    <TableCell>{service.updatedAt}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {/* View button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleView(service._id)}
+                          className="h-8 w-8 p-0 hover:bg-gray-100"
+                        >
+                          <Eye className="h-4 w-4 text-gray-600" />
+                        </Button>
+
+                        {/* Edit button */}
+                        <Dialog
+                          open={editingService?._id === service._id}
+                          onOpenChange={(open) =>
+                            !open && setEditingService(null)
+                          }
+                        >
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingService(service)}
+                            >
+                              <Edit className="w-4 h-4 text-gray-500" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit Service</DialogTitle>
+                            </DialogHeader>
+
+                            {/* EDIT FORM */}
+                            <form
+                              onSubmit={handleUpdateSubmit}
+                              className="space-y-4"
+                            >
+                              <div>
+                                <Label htmlFor="serviceTitle">Service Name</Label>
+                                <Input
+                                  id="serviceTitle"
+                                  name="serviceTitle"
+                                  defaultValue={editingService?.serviceTitle}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="price">Price</Label>
+                                <Input
+                                  id="price"
+                                  name="price"
+                                  type="number"
+                                  defaultValue={editingService?.price}
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="serviceDescription">
+                                  Description
+                                </Label>
+                                <Textarea
+                                  id="serviceDescription"
+                                  name="serviceDescription"
+                                  defaultValue={
+                                    editingService?.serviceDescription
+                                  }
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="image">Image</Label>
+                                <Input
+                                  id="image"
+                                  name="image"
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) =>
+                                    setSelectedImage(e.target.files?.[0] || null)
+                                  }
+                                />
+                              </div>
+
+                              <Button
+                                type="submit"
+                                className="w-full bg-blue-500 hover:bg-blue-600"
+                                disabled={updateMutation.isPending}
+                              >
+                                {updateMutation.isPending
+                                  ? "Updating..."
+                                  : "Update Service"}
+                              </Button>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+
+                        {/* Delete button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(service._id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="text-center py-8 text-gray-500"
                   >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Image
-                  </Button>
-                  {imagePreview && (
-                    <div className="mt-2">
-                      <img
-                        src={imagePreview || "/placeholder.svg"}
-                        alt="Preview"
-                        className="w-32 h-20 object-cover rounded"
-                      />
+                    No services found. Add your first service to get started.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* VIEW DETAILS DIALOG */}
+        <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Service Details</DialogTitle>
+            </DialogHeader>
+
+            {viewLoading ? (
+              <p className="text-center text-gray-500">Loading...</p>
+            ) : viewData ? (
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  {viewData.imageLink ? (
+                    <Image
+                      src={viewData.imageLink}
+                      alt={viewData.serviceTitle || "Service image"}
+                      width={100}
+                      height={100}
+                      className="rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-[100px] h-[100px] flex items-center justify-center rounded-lg bg-gray-100 text-gray-400">
+                      No Image
                     </div>
                   )}
+                  <div>
+                    <h3 className="font-semibold text-lg">
+                      {viewData.serviceTitle}
+                    </h3>
+                    <p className="text-gray-600">{viewData.serviceDescription}</p>
+                    <p className="text-blue-600 font-bold mt-2">
+                      ${viewData.price}
+                    </p>
+                  </div>
                 </div>
+                <p className="text-sm text-gray-500">
+                  Added on: {new Date(viewData.updatedAt).toLocaleString()}
+                </p>
               </div>
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                Add Blog
-              </Button>
-            </form>
+            ) : (
+              <p className="text-center text-gray-500">
+                Failed to load service details
+              </p>
+            )}
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Blogs Table */}
-      <div className="bg-white rounded-lg border">
-        {/* Table Header */}
-        <div className="grid grid-cols-3 gap-4 p-4 border-b bg-gray-50 font-medium text-gray-700">
-          <div>Blog Name</div>
-          <div>Added</div>
-          <div>Actions</div>
-        </div>
-
-        {/* Table Body */}
-        <div className="divide-y">
-          {currentBlogs.map((blog) => (
-            <div key={blog._id} className="grid grid-cols-3 gap-4 p-4 items-center">
-              {/* Blog Name Column */}
-              <div className="flex items-start space-x-3">
-                {/* <img
-                  src={blog.image || "/placeholder.svg?height=60&width=80&query=blog+thumbnail"}
-                  alt={blog.title}
-                  className="w-20 h-15 object-cover rounded flex-shrink-0"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.src = "/blog-thumbnail.png"
-                  }}
-                /> */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 mb-1 line-clamp-2">{blog.title}</p>
-                  <p className="text-sm text-gray-600 line-clamp-2">{blog.description}</p>
-                </div>
-              </div>
-
-              {/* Added Column */}
-              <div>
-                <p className="text-sm text-gray-600">{formatDate(blog.createdAt)}</p>
-              </div>
-
-              {/* Actions Column */}
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleView(blog)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  <Eye className="h-4 w-4 text-gray-600" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEdit(blog)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  <Edit className="h-4 w-4 text-gray-600" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(blog._id)}
-                  className="h-8 w-8 p-0 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4 text-red-600" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-          <p className="text-sm text-gray-600">
-            Showing {startIndex + 1} to {Math.min(endIndex, blogs.length)} of {blogs.length} results
-          </p>
-
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className={currentPage === page ? "bg-blue-600 hover:bg-blue-700" : ""}
-                >
-                  {page}
-                </Button>
-              ))}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+      <div className={`${showAddForm ? 'block' : 'hidden'}`}>
+        <Add showAddForm={showAddForm} setShowAddForm={setShowAddForm} />
       </div>
 
-      {/* Edit Blog Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Blog</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleEditBlog} className="space-y-4">
-            <div>
-              <Label htmlFor="edit-title">Blog Title</Label>
-              <Input
-                id="edit-title"
-                name="title"
-                required
-                defaultValue={editingBlog?.title}
-                placeholder="Enter blog title"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                name="description"
-                required
-                defaultValue={editingBlog?.description}
-                placeholder="Enter blog description"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-content">Content</Label>
-              <Textarea
-                id="edit-content"
-                name="content"
-                required
-                defaultValue={editingBlog?.content}
-                placeholder="Enter blog content"
-                rows={5}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-image">Blog Image</Label>
-              <div className="mt-2">
-                <Input id="edit-image" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById("edit-image")?.click()}
-                  className="w-full"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload New Image
-                </Button>
-                {imagePreview && (
-                  <div className="mt-2">
-                    <img
-                      src={imagePreview || "/placeholder.svg"}
-                      alt="Preview"
-                      className="w-32 h-20 object-cover rounded"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-              Update Blog
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </section>
   )
 }

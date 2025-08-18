@@ -235,6 +235,66 @@ export async function createStrategy(data: any) {
 }
 
 
+// Blog API
+export async function fetchBlogs() {
+  const response = await api.get(`/blog/get`)
+  return response.data
+}
+
+export async function fetchBlog(id: string) {
+  try {
+    const response = await api.get(`/blog/${id}`)
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch blog")
+  }
+}
+
+export async function createBlog(data: any, image?: File) {
+  try {
+    const formData = new FormData()
+    formData.append("data", JSON.stringify(data))
+    if (image) {
+      formData.append("image", image)
+    }
+    const response = await api.post("/blog/create", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to create blog")
+  }
+}
+
+export async function updateBlog(id: string, data: any, image?: File) {
+  try {
+    const formData = new FormData()
+    formData.append("data", JSON.stringify(data))
+    if (image) {
+      formData.append("image", image)
+    }
+    const response = await api.put(`/blog/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update blog")
+  }
+}
+
+export async function deleteBlog(id: string) {
+  try {
+    const response = await api.delete(`/blog/${id}`)
+    return response.data
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to delete blog")
+  }
+}
+
 
 
 
