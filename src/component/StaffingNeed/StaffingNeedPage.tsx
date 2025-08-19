@@ -18,12 +18,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  
 } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import { toast } from "sonner";
 import { StaffingNeed, staffingNeedApi, staffNeed } from "@/lib/api";
-import { Edit, Eye, Trash2 } from "lucide-react";
+import { Eye  } from "lucide-react";
 
 export default function StaffingNeedPage() {
   const queryClient = useQueryClient();
@@ -52,12 +52,7 @@ export default function StaffingNeedPage() {
     setDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    staffingNeedApi.delete(id).then(() => {
-      queryClient.invalidateQueries({ queryKey: ["staffingNeeds"] });
-      toast.success("Deleted successfully");
-    });
-  };
+
 
   if (isLoading) return <div>Loading...</div>;
   if (error instanceof Error) return <div>Error: {error.message}</div>;

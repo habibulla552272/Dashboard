@@ -48,6 +48,11 @@ export interface Payment {
 }
 
 export interface StaffingNeed {
+  email: ReactNode;
+  staffDescription: ReactNode;
+  lastName: any;
+  firstName: any;
+  businessEmail: ReactNode;
   _id: string;
   userId: string;
   companyName: string;

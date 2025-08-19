@@ -37,7 +37,7 @@ export function Sidebar({ activePage, onPageChange }: SidebarProps) {
 
   return (
     <>
-      <div className="w-64 bg-black border-r border-gray-800">
+      <div className="w-60 bg-black border-r border-gray-800 fixed top-0 left-0 h-[100vh]">
         <div className="p-6">
           <div className="flex items-center gap-2 mb-8">
             <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
@@ -69,7 +69,7 @@ export function Sidebar({ activePage, onPageChange }: SidebarProps) {
           </nav>
         </div>
 
-        <div className="absolute bottom-6 left-6 right-6 w-40 h-20">
+        <div className=" absolute -bottom-10 left-14  w-40 right-6 h-20">
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-gray-300 hover:bg-gray-800 hover:text-white"

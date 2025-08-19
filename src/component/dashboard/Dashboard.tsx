@@ -12,6 +12,7 @@ import { DataSetsPage } from "../dataSetsPage/DataSetsPage"
 import { BlogsPage } from "../blogs/Blogs"
 import StaffingNeedPage from "../StaffingNeed/StaffingNeedPage"
 import { Sidebar } from "../sidebar/sidebar"
+import TopProfile from "./topprofile/TopProfile"
 
 export type ActivePage =
   | "dashboard"
@@ -53,17 +54,20 @@ export function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-screen w-full justify-between">
+      <div className="z-50">
       <Sidebar activePage={activePage} onPageChange={setActivePage} />
-      <div className="w-full">
-        <div className="bg-black text-white h-20 flex justify-end">
-          <div>
-            <h2>Testing purpus</h2>
-            <p>Hello bro how are you </p>
-          </div>
-        </div>
-      <main className="flex-1 overflow-auto w-full bg-white">{renderContent()}</main>
 
+      </div>
+
+      <div className="w-full">
+        <div className="bg-black text-white fixed top-0 right-0 w-full  z-40 flex justify-end">
+          <TopProfile />
+        </div>
+        <div>
+
+        </div>
+      <main className="overflow-auto mt-24 pt-4 bg-white w-[calc(100vw-260px)] ms-auto ">{renderContent()}</main>
       </div>
     </div>
   )
