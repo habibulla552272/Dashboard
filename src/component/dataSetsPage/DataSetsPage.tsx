@@ -1,25 +1,32 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, Plus } from "lucide-react"
+import { Eye, Edit, Trash2, Plus } from "lucide-react"
 import { toast } from "sonner"
-
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { dataSetCreate, dataSetDelete, dataSetUpdate, fetchDataSets } from "@/lib/api"
 
 interface DataSet {
   _id: string
   dataSetName: string
   companyName: string
-  user: {
-    name: string
+  userId: {
+    firstName: string
+    lastName: string
     email: string
     avatar?: string
+    companyName?: string
   }
   createdAt: string
 }
@@ -28,67 +35,58 @@ export function DataSetsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isViewOpen, setIsViewOpen] = useState(false)
   const [editingDataSet, setEditingDataSet] = useState<DataSet | null>(null)
+  const [viewingDataSet, setViewingDataSet] = useState<DataSet | null>(null)
+
   const itemsPerPage = 10
+  const queryClient = useQueryClient()
 
+  // Fetch data
+  const { data } = useQuery({
+    queryKey: ["dataSets"],
+    queryFn: fetchDataSets,
+  })
+  const setsData = data?.data || []
 
-  // Mock data matching the screenshot
-  const mockDataSets: DataSet[] = [
-    {
-      _id: "1",
-      dataSetName: "ABC",
-      companyName: "Elite Stack",
-      user: {
-        name: "Zihadul Islam",
-        email: "zihadulislam.bdcalling@gmail.com",
-        avatar: "/diverse-user-avatars.png",
-      },
-      createdAt: "2025-07-30T17:25:00Z",
+  // Mutations
+  const dataSetMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => dataSetUpdate(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dataSets"] })
+      toast.success("Data set updated successfully")
+      setIsEditOpen(false)
+      setEditingDataSet(null)
     },
-    {
-      _id: "2",
-      dataSetName: "data debo nah",
-      companyName: "Elite Stack",
-      user: {
-        name: "Zihadul Islam",
-        email: "zihadulislam.bdcalling@gmail.com",
-        avatar: "/diverse-user-avatars.png",
-      },
-      createdAt: "2025-07-30T17:25:00Z",
-    },
-    {
-      _id: "3",
-      dataSetName: "why",
-      companyName: "fams",
-      user: {
-        name: "Fahim ahmed",
-        email: "fahim37.bdcalling@gmail.com",
-        avatar: "/diverse-user-avatar-set-2.png",
-      },
-      createdAt: "2025-07-31T22:54:00Z",
-    },
-    {
-      _id: "4",
-      dataSetName: "New Data",
-      companyName: "fams",
-      user: {
-        name: "Fahim ahmed",
-        email: "fahim37.bdcalling@gmail.com",
-        avatar: "/diverse-user-avatar-set-2.png",
-      },
-      createdAt: "2025-07-31T14:11:00Z",
-    },
-  ]
+    onError: () => toast.error("Failed to update data set"),
+  })
 
-  const [dataSets, setDataSets] = useState<DataSet[]>(mockDataSets)
+  const createMutation = useMutation({
+    mutationFn: (data: any) => dataSetCreate(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dataSets"] })
+      toast.success("Data set created successfully")
+      setIsAddOpen(false)
+    },
+    onError: () => toast.error("Failed to create data set"),
+  })
 
-  const totalPages = Math.ceil(dataSets.length / itemsPerPage)
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => dataSetDelete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dataSets"] })
+      toast.success("Data set deleted successfully")
+    },
+    onError: () => toast.error("Failed to delete data set"),
+  })
+
+  const totalPages = Math.ceil(setsData.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentDataSets = dataSets.slice(startIndex, endIndex)
+  const currentDataSets = setsData.slice(startIndex, endIndex)
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleString("en-US", {
       month: "2-digit",
       day: "2-digit",
       year: "numeric",
@@ -96,55 +94,10 @@ export function DataSetsPage() {
       minute: "2-digit",
       hour12: true,
     })
-  }
-
-  const handleAddDataSet = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const newDataSet: DataSet = {
-      _id: Date.now().toString(),
-      dataSetName: formData.get("dataSetName") as string,
-      companyName: formData.get("companyName") as string,
-      user: {
-        name: formData.get("userName") as string,
-        email: formData.get("userEmail") as string,
-        avatar: "/abstract-user-avatar.png",
-      },
-      createdAt: new Date().toISOString(),
-    }
-
-    setDataSets([...dataSets, newDataSet])
-    setIsAddOpen(false)
-    toast({ title: "Data set added successfully" })
-    console.log("[v0] Added new data set:", newDataSet)
-  }
-
-  const handleEditDataSet = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!editingDataSet) return
-
-    const formData = new FormData(e.currentTarget)
-    const updatedDataSet: DataSet = {
-      ...editingDataSet,
-      dataSetName: formData.get("dataSetName") as string,
-      companyName: formData.get("companyName") as string,
-      user: {
-        ...editingDataSet.user,
-        name: formData.get("userName") as string,
-        email: formData.get("userEmail") as string,
-      },
-    }
-
-    setDataSets(dataSets.map((ds) => (ds._id === editingDataSet._id ? updatedDataSet : ds)))
-    setIsEditOpen(false)
-    setEditingDataSet(null)
-    toast({ title: "Data set updated successfully" })
-    console.log("[v0] Updated data set:", updatedDataSet)
-  }
 
   const handleView = (dataSet: DataSet) => {
-    console.log("[v0] Viewing data set:", dataSet)
-    // TODO: Implement view data set functionality
+    setViewingDataSet(dataSet)
+    setIsViewOpen(true)
   }
 
   const handleEdit = (dataSet: DataSet) => {
@@ -153,9 +106,38 @@ export function DataSetsPage() {
   }
 
   const handleDelete = (dataSetId: string) => {
-    setDataSets(dataSets.filter((ds) => ds._id !== dataSetId))
-    toast({ title: "Data set deleted successfully" })
-    console.log("[v0] Deleted data set:", dataSetId)
+    deleteMutation.mutate(dataSetId)
+  }
+
+  const handleEditSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!editingDataSet) return
+
+    const formData = new FormData(e.currentTarget)
+    const updatedData = {
+      dataSetName: formData.get("dataSetName") as string,
+      companyName: formData.get("companyName") as string,
+      userId: {
+        firstName: formData.get("firstName") as string,
+        email: formData.get("email") as string,
+      },
+    }
+
+    dataSetMutation.mutate({ id: editingDataSet._id, data: updatedData })
+  }
+
+  const handleCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const newData = {
+      dataSetName: formData.get("dataSetName") as string,
+      companyName: formData.get("companyName") as string,
+      userId: {
+        firstName: formData.get("firstName") as string,
+        email: formData.get("email") as string,
+      },
+    }
+    createMutation.mutate(newData)
   }
 
   return (
@@ -177,25 +159,29 @@ export function DataSetsPage() {
             <DialogHeader>
               <DialogTitle>Add New Data Set</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleAddDataSet} className="space-y-4">
+            <form onSubmit={handleCreateSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="add-dataSetName">Data Set Name</Label>
-                <Input id="add-dataSetName" name="dataSetName" required placeholder="Enter data set name" />
+                <Label>Data Set Name</Label>
+                <Input name="dataSetName" required placeholder="Enter data set name" />
               </div>
               <div>
-                <Label htmlFor="add-companyName">Company Name</Label>
-                <Input id="add-companyName" name="companyName" required placeholder="Enter company name" />
+                <Label>Company Name</Label>
+                <Input name="companyName" required placeholder="Enter company name" />
               </div>
               <div>
-                <Label htmlFor="add-userName">User Name</Label>
-                <Input id="add-userName" name="userName" required placeholder="Enter user name" />
+                <Label>User Name</Label>
+                <Input name="firstName" required placeholder="Enter user name" />
               </div>
               <div>
-                <Label htmlFor="add-userEmail">User Email</Label>
-                <Input id="add-userEmail" name="userEmail" type="email" required placeholder="Enter user email" />
+                <Label>User Email</Label>
+                <Input name="email" type="email" required placeholder="Enter user email" />
               </div>
-              <Button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-600">
-                Add Data Set
+              <Button
+                type="submit"
+                className="w-full bg-cyan-500 hover:bg-cyan-600"
+                disabled={createMutation.isPending}
+              >
+                {createMutation.isPending ? "Creating..." : "Add Data Set"}
               </Button>
             </form>
           </DialogContent>
@@ -204,7 +190,6 @@ export function DataSetsPage() {
 
       {/* Data Sets Table */}
       <div className="bg-white rounded-lg border">
-        {/* Table Header */}
         <div className="grid grid-cols-5 gap-4 p-4 border-b bg-gray-50 font-medium text-gray-700">
           <div>Data Set Name</div>
           <div>Company Name</div>
@@ -212,168 +197,99 @@ export function DataSetsPage() {
           <div>Added</div>
           <div>Actions</div>
         </div>
-
-        {/* Table Body */}
         <div className="divide-y">
-          {currentDataSets.map((dataSet) => (
+          {currentDataSets.map((dataSet: any) => (
             <div key={dataSet._id} className="grid grid-cols-5 gap-4 p-4 items-center">
-              {/* Data Set Name Column */}
               <div>
-                <p className="font-medium text-gray-900">{dataSet.dataSetName}</p>
+                <p className="font-medium text-gray-900">{dataSet?.dataSetName}</p>
               </div>
-
-              {/* Company Name Column */}
               <div>
-                <p className="text-gray-900">{dataSet.companyName}</p>
+                <p className="text-gray-900">{dataSet?.companyName}</p>
               </div>
-
-              {/* User Info Column */}
               <div className="flex items-center space-x-3">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={dataSet.user.avatar || "/placeholder.svg"} alt={dataSet.user.name} />
-                  <AvatarFallback className="bg-orange-500 text-white text-xs">
-                    {dataSet.user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
+                  <AvatarImage src={dataSet?.userId?.avatar || "/placeholder.svg"} />
+                  <AvatarFallback>{dataSet?.userId?.firstName?.[0] || "?"}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium text-gray-900 text-sm">{dataSet.user.name}</p>
-                  <p className="text-xs text-gray-500">{dataSet.user.email}</p>
+                  <p className="font-medium text-gray-900 text-sm">{`${dataSet?.userId?.firstName || ""} ${dataSet?.userId?.lastName || ""}`}</p>
+                  <p className="text-xs text-gray-500">{dataSet?.userId?.email}</p>
                 </div>
               </div>
-
-              {/* Added Column */}
               <div>
                 <p className="text-sm text-gray-600">{formatDate(dataSet.createdAt)}</p>
               </div>
-
-              {/* Actions Column */}
               <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleView(dataSet)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
+                <Button variant="ghost" size="sm" onClick={() => handleView(dataSet)}>
                   <Eye className="h-4 w-4 text-gray-600" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEdit(dataSet)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
+                <Button variant="ghost" size="sm" onClick={() => handleEdit(dataSet)}>
                   <Edit className="h-4 w-4 text-gray-600" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDelete(dataSet._id)}
-                  className="h-8 w-8 p-0 hover:bg-red-50"
-                >
+                <Button variant="ghost" size="sm" onClick={() => handleDelete(dataSet._id)}>
                   <Trash2 className="h-4 w-4 text-red-600" />
                 </Button>
               </div>
             </div>
           ))}
         </div>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-          <p className="text-sm text-gray-600">
-            Showing {startIndex + 1} to {Math.min(endIndex, dataSets.length)} of {dataSets.length} results
-          </p>
-
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className={currentPage === page ? "bg-blue-600 hover:bg-blue-700" : ""}
-                >
-                  {page}
-                </Button>
-              ))}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
       </div>
 
-      {/* Edit Data Set Dialog */}
+      {/* View Dialog */}
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Data Set Details</DialogTitle>
+          </DialogHeader>
+          {viewingDataSet && (
+            <div className="space-y-4">
+              <p><strong>Data Set Name:</strong> {viewingDataSet.dataSetName}</p>
+              <p><strong>Company:</strong> {viewingDataSet.companyName}</p>
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={viewingDataSet.userId?.avatar || "/placeholder.svg"} />
+                  <AvatarFallback>{viewingDataSet.userId?.firstName?.[0]}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{`${viewingDataSet.userId?.firstName} ${viewingDataSet.userId?.lastName}`}</p>
+                  <p className="text-sm text-gray-500">{viewingDataSet.userId?.email}</p>
+                </div>
+              </div>
+              <p><strong>Added:</strong> {formatDate(viewingDataSet.createdAt)}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Data Set</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleEditDataSet} className="space-y-4">
-            <div>
-              <Label htmlFor="edit-dataSetName">Data Set Name</Label>
-              <Input
-                id="edit-dataSetName"
-                name="dataSetName"
-                required
-                defaultValue={editingDataSet?.dataSetName}
-                placeholder="Enter data set name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-companyName">Company Name</Label>
-              <Input
-                id="edit-companyName"
-                name="companyName"
-                required
-                defaultValue={editingDataSet?.companyName}
-                placeholder="Enter company name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-userName">User Name</Label>
-              <Input
-                id="edit-userName"
-                name="userName"
-                required
-                defaultValue={editingDataSet?.user.name}
-                placeholder="Enter user name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-userEmail">User Email</Label>
-              <Input
-                id="edit-userEmail"
-                name="userEmail"
-                type="email"
-                required
-                defaultValue={editingDataSet?.user.email}
-                placeholder="Enter user email"
-              />
-            </div>
-            <Button type="submit" className="w-full bg-cyan-500 hover:bg-cyan-600">
-              Update Data Set
-            </Button>
-          </form>
+          {editingDataSet && (
+            <form className="space-y-4" onSubmit={handleEditSubmit}>
+              <div>
+                <Label>Data Set Name</Label>
+                <Input name="dataSetName" defaultValue={editingDataSet.dataSetName} />
+              </div>
+              <div>
+                <Label>Company Name</Label>
+                <Input name="companyName" defaultValue={editingDataSet?.companyName} />
+              </div>
+              <div>
+                <Label>User First Name</Label>
+                <Input name="firstName" defaultValue={editingDataSet.userId?.firstName} />
+              </div>
+              <div>
+                <Label>User Email</Label>
+                <Input name="email" type="email" defaultValue={editingDataSet.userId?.email} />
+              </div>
+              <Button type="submit" disabled={dataSetMutation.isPending} className="w-full bg-cyan-500 hover:bg-cyan-600">
+                {dataSetMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>

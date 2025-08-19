@@ -55,7 +55,16 @@ export function Dashboard() {
   return (
     <div className="flex h-screen w-full">
       <Sidebar activePage={activePage} onPageChange={setActivePage} />
-      <main className="flex-1 overflow-auto bg-white">{renderContent()}</main>
+      <div className="w-full">
+        <div className="bg-black text-white h-20 flex justify-end">
+          <div>
+            <h2>Testing purpus</h2>
+            <p>Hello bro how are you </p>
+          </div>
+        </div>
+      <main className="flex-1 overflow-auto w-full bg-white">{renderContent()}</main>
+
+      </div>
     </div>
   )
 }

@@ -25,8 +25,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-
-
 export interface Service {
   _id: string;
   serviceTitle: string;
@@ -59,7 +57,6 @@ export interface StaffingNeed {
   updatedAt: string;
 }
 
-
 //manul try
 
 export async function adminStats() {
@@ -72,287 +69,301 @@ export async function adminStats() {
 }
 
 export async function stats() {
-  try{
-    const res = await api.get('/payment/stats');
+  try {
+    const res = await api.get("/payment/stats");
     return res.data;
-  }catch(error){
-    if(error instanceof Error){
-      throw new Error('Failed to fetch admin stats')
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Failed to fetch admin stats");
     }
   }
-  
 }
 
 //catagory data
 export async function categoryStats() {
-
-  try{
-    const res= await api.get('/payment/category-stats')
+  try {
+    const res = await api.get("/payment/category-stats");
     return res.data;
-  }catch(error){
-    if(error instanceof Error){
-      throw new Error('Failed to fetch admin stats')
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Failed to fetch admin stats");
     }
   }
 }
 
 //Services data call
 
-// create service 
-export async function createService(data:any,image?:File) {
-    try{
-      const formData=new FormData();
-      formData.append('data',JSON.stringify(data))
-      if(image){
-        formData.append('image',image)
-      }
-      const res= await api.post('/services/create',formData,{
-        headers:{
-          'Content-Type':'multipart/form-data',
-        },
-      })
-      return res.data
-    }catch(error:any){
-      throw new Error(error.message || 'Failed to create service')
+// create service
+export async function createService(data: any, image?: File) {
+  try {
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(data));
+    if (image) {
+      formData.append("image", image);
     }
-  
+    const res = await api.post("/services/create", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to create service");
+  }
 }
 
 export async function ServicesData() {
-    try{
-    const res= await api.get('/services/get')
+  try {
+    const res = await api.get("/services/get");
     return res.data;
-  }catch(error){
-    if(error instanceof Error){
-      throw new Error('Failed to fetch admin stats')
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Failed to fetch admin stats");
     }
   }
 }
-export async function ServicesSingleData(id:string) {
-    try{
-    const res= await api.get(`/services/${id}`)
+export async function ServicesSingleData(id: string) {
+  try {
+    const res = await api.get(`/services/${id}`);
     return res.data;
-  }catch(error){
-    if(error instanceof Error){
-      throw new Error('Failed to fetch admin stats')
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Failed to fetch admin stats");
     }
   }
-
 }
 
-export async function serviceDelete(id:string) {
-  try{
-      const respons= await api.delete(`/services/${id}`)
-      return respons.data
-  }catch(error:any){
-      throw new Error(error.message ||'Failed to fetch admin stats')
+export async function serviceDelete(id: string) {
+  try {
+    const respons = await api.delete(`/services/${id}`);
+    return respons.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch admin stats");
   }
-  
 }
 
-//service 
-export async function serviceEdit(id:string,data:any,image?:File) {
-  try{
-      const formData=new FormData()
-      formData.append('data',JSON.stringify(data))
-      if(image){
-        formData.append('image',image)
-      }
-      const res= await api.put(`/services/${id}`,formData,{
-        headers:{
-           "Content-Type": "multipart/form-data",
-        }
-      })
-      return res.data
-  }catch(error:any){
-    
-      throw new Error(error.message ||'Failed to fetch admin stats')
-    
+//service
+export async function serviceEdit(id: string, data: any, image?: File) {
+  try {
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(data));
+    if (image) {
+      formData.append("image", image);
+    }
+    const res = await api.put(`/services/${id}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch admin stats");
   }
-  
 }
 
-
-//strategy 
+//strategy
 
 export async function fetchStrategies(page = 1, limit = 10) {
   try {
-    const response = await api.get(`/strategy/get?page=${page}&limit=${limit}`)
-    return response.data
+    const response = await api.get(`/strategy/get?page=${page}&limit=${limit}`);
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch strategies")
+    throw new Error(error.message || "Failed to fetch strategies");
   }
 }
 // Fetch a specific strategy
 export async function fetchStrategy(id: string) {
   try {
-    const response = await api.get(`/strategy/${id}`)
-    return response.data
+    const response = await api.get(`/strategy/${id}`);
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch strategy")
+    throw new Error(error.message || "Failed to fetch strategy");
   }
 }
-
 
 // Update a specific strategy
 export async function updateStrategy(id: string, data: any) {
   try {
-    const response = await api.put(`/strategy/${id}`, data)
-    return response.data
+    const response = await api.put(`/strategy/${id}`, data);
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to update strategy")
+    throw new Error(error.message || "Failed to update strategy");
   }
 }
-
 
 // Get user Strategies
 export async function fetchUserStrategies(page = 1, limit = 5) {
   try {
-    const response = await api.get(`/strategy/my-strategy?page=${page}&limit=${limit}`)
-    return response.data
+    const response = await api.get(
+      `/strategy/my-strategy?page=${page}&limit=${limit}`
+    );
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch user strategies")
+    throw new Error(error.message || "Failed to fetch user strategies");
   }
 }
 
-
 export async function deleteStrategy(id: string) {
   try {
-    const response = await api.delete(`/strategy/${id}`)
-    return response.data
+    const response = await api.delete(`/strategy/${id}`);
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to delete strategy")
+    throw new Error(error.message || "Failed to delete strategy");
   }
 }
 
 export async function createStrategy(data: any) {
   try {
-    const response = await api.post("/strategy/create", data)
-    return response.data
+    const response = await api.post("/strategy/create", data);
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to create strategy")
+    throw new Error(error.message || "Failed to create strategy");
   }
 }
 
-
 // Blog API
 export async function fetchBlogs() {
-  const response = await api.get(`/blog/get`)
-  return response.data
+  const response = await api.get(`/blog/get`);
+  return response.data;
 }
 
 export async function fetchBlog(id: string) {
   try {
-    const response = await api.get(`/blog/${id}`)
-    return response.data
+    const response = await api.get(`/blog/${id}`);
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch blog")
+    throw new Error(error.message || "Failed to fetch blog");
   }
 }
 
 export async function createBlog(data: any, image?: File) {
   try {
-    const formData = new FormData()
-    formData.append("data", JSON.stringify(data))
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(data));
     if (image) {
-      formData.append("image", image)
+      formData.append("image", image);
     }
     const response = await api.post("/blog/create", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
-    })
-    return response.data
+    });
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to create blog")
+    throw new Error(error.message || "Failed to create blog");
   }
 }
 
 export async function updateBlog(id: string, data: any, image?: File) {
   try {
-    const formData = new FormData()
-    formData.append("data", JSON.stringify(data))
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(data));
     if (image) {
-      formData.append("image", image)
+      formData.append("image", image);
     }
     const response = await api.put(`/blog/${id}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
-    })
-    return response.data
+    });
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to update blog")
+    throw new Error(error.message || "Failed to update blog");
   }
 }
 
 export async function deleteBlog(id: string) {
   try {
-    const response = await api.delete(`/blog/${id}`)
-    return response.data
+    const response = await api.delete(`/blog/${id}`);
+    return response.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to delete blog")
+    throw new Error(error.message || "Failed to delete blog");
   }
 }
 
-
-//solution api 
+//solution api
 
 export async function solutionData() {
-
-  try{
-   const res= await api.get('/solution/get');
-   return res.data;
-  }catch(error:any){
-    throw new Error(error.message || 'Failed to Fetch Solution data')
+  try {
+    const res = await api.get("/solution/get");
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to Fetch Solution data");
   }
-  
 }
 
-export async function updateSolution(id:string,data:any) {
-  try{
-    const res = await api.put(`/solution/${id}`,data)
-    return res.data
-  }catch(error:any){
-    throw new Error(error.message || 'Failed to Update Solution');
+export async function updateSolution(id: string, data: any) {
+  try {
+    const res = await api.put(`/solution/${id}`, data);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to Update Solution");
   }
-  
 }
 
+// delete solution
 
-// delete solution 
-
-export async function delteSolution(id:string) {
-  try{
-    const respons= await api.delete(`/solution/${id}`)
+export async function delteSolution(id: string) {
+  try {
+    const respons = await api.delete(`/solution/${id}`);
     return respons.data;
-  }catch(error:any){
-    throw new Error(error.message || 'Failed to delete solution')
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to delete solution");
   }
-  
 }
 
-
-//payment api 
-
+//payment api
 
 export async function fetchPayment() {
-
-  try{
-    const res= await api.get('/payment');
+  try {
+    const res = await api.get("/payment");
     return res.data;
-  }catch(error:any){
-    throw new Error(error.message || 'Failed to fetch payment')
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch payment");
   }
 }
 
+//data Sets
 
+export async function fetchDataSets() {
+  try {
+    const res = await api.get("/data-set/all");
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch data sets");
+  }
+}
 
+export async function dataSetUpdate(id: string, data: any) {
+  try {
+    const res = await api.put(`/data-set/update/${id}`, data);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update data set");
+  }
+}
 
+export async function dataSetCreate(data: any) {
+  try {
+    const res = await api.post("/data-set/create", data);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update data set");
+  }
+}
 
+// delete 
 
+export async function dataSetDelete(id:string) {
 
-
+  try{
+    const res= await api.delete(`/data-set/delete/${id}`)
+    return res.data
+  }catch(error:any){
+    throw new Error(error.message || 'Failed to Delete data')
+  }
+  
+}
 
 // Services API
 // export const servicesApi = {
@@ -424,25 +435,25 @@ export async function fetchPayment() {
 // };
 
 // Payments API
-export const paymentsApi = {
-  getAll: async (): Promise<Payment[]> => {
-    const response = await fetch(`${API_BASE_URL}/payment`);
-    if (!response.ok) throw new Error("Failed to fetch payments");
-    return response.json();
-  },
+// export const paymentsApi = {
+//   getAll: async (): Promise<Payment[]> => {
+//     const response = await fetch(`${API_BASE_URL}/payment`);
+//     if (!response.ok) throw new Error("Failed to fetch payments");
+//     return response.json();
+//   },
 
-  create: async (
-    payment: Omit<Payment, "_id" | "createdAt" | "updatedAt">
-  ): Promise<Payment> => {
-    const response = await fetch(`${API_BASE_URL}/payment/create-payment`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payment),
-    });
-    if (!response.ok) throw new Error("Failed to create payment");
-    return response.json();
-  },
-};
+//   create: async (
+//     payment: Omit<Payment, "_id" | "createdAt" | "updatedAt">
+//   ): Promise<Payment> => {
+//     const response = await fetch(`${API_BASE_URL}/payment/create-payment`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(payment),
+//     });
+//     if (!response.ok) throw new Error("Failed to create payment");
+//     return response.json();
+//   },
+// };
 
 export const staffingNeedApi = {
   getAll: async (): Promise<StaffingNeed[]> => {
