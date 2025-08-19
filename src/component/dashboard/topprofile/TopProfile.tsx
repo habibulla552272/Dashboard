@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 
-const TopProfile = () => {
+const TopProfile: React.FC = () => {
   const { data: session, status } = useSession();
 
   if (status === "loading") {
@@ -31,7 +31,7 @@ const TopProfile = () => {
           ) : (
             <div className="flex items-center gap-4 cursor-pointer">
               <Image
-                src={session.user?.image || ""}
+                src={session.user?.image || "/default-profile.png"}
                 alt="Profile"
                 width={40}
                 height={40}
@@ -39,35 +39,34 @@ const TopProfile = () => {
               />
               <h1 className="text-xl font-semibold">
                 {session.user?.name || "User"}{" "}
-                <span className="text-red-400 text-xs">(admin)</span>
+                {session.user?.role && (
+                  <span className="text-red-400 text-xs">({session.user.role})</span>
+                )}
               </h1>
             </div>
           )}
         </DialogTrigger>
 
-        <DialogContent>
+        <DialogContent className="absolute top-[27%] left-[85%]">
           <DialogHeader>
             <DialogTitle>Profile Details</DialogTitle>
-            <DialogDescription>
-              {!session ? (
-                <p>Not logged in</p>
-              ) : (
-                <div className="space-y-2 text-black">
-                  <p>
-                    <strong>Name:</strong> {session.user?.name}
-                  </p>
-                  {/** Only show if role exists */}
-                  {session.user?.role && (
-                    <p>
-                      <strong>Role:</strong> {session.user.role}
-                    </p>
-                  )}
-                  <p>
-                    <strong>Email:</strong> {session.user?.email}
-                  </p>
+            {session ? (
+              <div className="space-y-2 text-black">
+                <div>
+                  <strong>Name:</strong> {session.user?.name}
                 </div>
-              )}
-            </DialogDescription>
+                {session.user?.role && (
+                  <div>
+                    <strong>Role:</strong> {session.user.role}
+                  </div>
+                )}
+                <div>
+                  <strong>Email:</strong> {session.user?.email}
+                </div>
+              </div>
+            ) : (
+              <DialogDescription>Not logged in</DialogDescription>
+            )}
           </DialogHeader>
         </DialogContent>
       </Dialog>

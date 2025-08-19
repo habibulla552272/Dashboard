@@ -67,7 +67,7 @@ export function Dashboard() {
         <div>
 
         </div>
-      <main className="overflow-auto mt-24 pt-4 bg-white w-[calc(100vw-260px)] ms-auto ">{renderContent()}</main>
+      <main className="overflow-auto mt-24 pt-4 bg-white w-[calc(100vw-200px)] ms-auto h-full  ">{renderContent()}</main>
       </div>
     </div>
   )

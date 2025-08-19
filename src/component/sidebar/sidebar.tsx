@@ -37,9 +37,9 @@ export function Sidebar({ activePage, onPageChange }: SidebarProps) {
 
   return (
     <>
-      <div className="w-60 bg-black border-r border-gray-800 fixed top-0 left-0 h-[100vh]">
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-8">
+      <div className="w-44 bg-black border-r border-gray-800 fixed top-0 left-0 h-[100vh]">
+        <div className="p-6 border-b-2 border-accent-foreground ">
+          <div className="flex items-center gap-2 mb-6">
             <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">Q</span>
             </div>
@@ -54,25 +54,31 @@ export function Sidebar({ activePage, onPageChange }: SidebarProps) {
                   key={item.id}
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start gap-3 h-10",
+                    "w-32 justify-start gap-3  h-14 flex flex-col my-7",
                     activePage === item.id
                       ? "bg-gray-800 text-white"
-                      : "text-gray-300 hover:bg-gray-800 hover:text-white",
+                      : "text-gray-300  hover:bg-white hover:text-black",
                   )}
                   onClick={() => onPageChange(item.id)}
                 >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
+                  <p>
+
+                  <Icon className="w-6 h-6" />
+                  </p>
+                  <p className="text-xm">
+
+                  {item.label} 
+                  </p>
                 </Button>
               )
             })}
           </nav>
         </div>
 
-        <div className=" absolute -bottom-10 left-14  w-40 right-6 h-20">
+        <div className=" absolute bottom-0 left-10  w-32 right-6 h-14">
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 text-gray-300 hover:bg-gray-800 hover:text-white"
+            className="w-full justify-start gap-3 text-gray-300 hover:bg-white hover:text-black"
             onClick={() => setShowLogoutModal(true)}
           >
             <LogOut className="w-4 h-4" />
