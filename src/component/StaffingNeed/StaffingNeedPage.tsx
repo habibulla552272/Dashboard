@@ -2,44 +2,61 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
- // ✅ FIXED: import API
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { StaffingNeed, staffingNeedApi } from "@/lib/api";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import { StaffingNeed, staffingNeedApi, staffNeed } from "@/lib/api";
+import { Edit, Eye, Trash2 } from "lucide-react";
 
 export default function StaffingNeedPage() {
   const queryClient = useQueryClient();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [formData, setFormData] = useState({
-    companyName: "",
-    dataStrategyFocusArea: "",
-    dataStrategyNotes: "",
-  });
+  const [viewingNeed, setViewingNeed] = useState<StaffingNeed | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Fetch staffing needs
-  const { data: staffingNeeds, isLoading, error } = useQuery<StaffingNeed[]>({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["staffingNeeds"],
-    queryFn: staffingNeedApi.getAll,
+    queryFn: staffNeed,
   });
 
-  // Create staffing need
+  const staffingNeeds: StaffingNeed[] = data?.data || [];
+
   const createMutation = useMutation({
-    mutationFn: staffingNeedApi.create,
+    mutationFn: (newNeed: any) => staffingNeedApi.create(newNeed),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["staffingNeeds"] });
       setShowAddForm(false);
-      setFormData({
-        companyName: "",
-        dataStrategyFocusArea: "",
-        dataStrategyNotes: "",
-      });
+      toast.success("Staffing need added successfully!");
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMutation.mutate(formData);
+  const handleView = (need: StaffingNeed) => {
+    setViewingNeed(need);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    staffingNeedApi.delete(id).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["staffingNeeds"] });
+      toast.success("Deleted successfully");
+    });
   };
 
   if (isLoading) return <div>Loading...</div>;
@@ -49,72 +66,99 @@ export default function StaffingNeedPage() {
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">Staffing Needs</h1>
 
-      <Button onClick={() => setShowAddForm(!showAddForm)}>
-        {showAddForm ? "Cancel" : "Add Staffing Need"}
-      </Button>
+      {/* Table */}
+      <div className="bg-white rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>User Company</TableHead>
+              <TableHead>Data-Driven Staffing Need</TableHead>
+              <TableHead>Time</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
 
-      {showAddForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white shadow p-4 rounded space-y-4"
-        >
-          <div>
-            <Label htmlFor="companyName">Company Name</Label>
-            <Input
-              id="companyName"
-              value={formData.companyName}
-              onChange={(e) =>
-                setFormData({ ...formData, companyName: e.target.value })
-              }
-              required
-            />
-          </div>
+          <TableBody>
+            {staffingNeeds.length > 0 ? (
+              staffingNeeds.map((need) => (
+                <TableRow key={need._id}>
+                  <TableCell className="flex items-center gap-2">
+                    <div>
+                      <p className="text-xl font-bold py-2">{`${need.firstName} ${need.lastName}`}</p>
+                      <p>{need.businessEmail}</p>
+                    </div>
+                  </TableCell>
 
-          <div>
-            <Label htmlFor="focusArea">Data Strategy Focus Area</Label>
-            <Input
-              id="focusArea"
-              value={formData.dataStrategyFocusArea}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  dataStrategyFocusArea: e.target.value,
-                })
-              }
-              required
-            />
-          </div>
+                  <TableCell>{need.companyName}</TableCell>
 
-          <div>
-            <Label htmlFor="notes">Data Strategy Notes</Label>
-            <Input
-              id="notes"
-              value={formData.dataStrategyNotes}
-              onChange={(e) =>
-                setFormData({ ...formData, dataStrategyNotes: e.target.value })
-              }
-              required
-            />
-          </div>
+                  <TableCell>
+                    <p>{need.staffDescription}</p>
+                  </TableCell>
 
-          <Button type="submit" disabled={createMutation.isLoading}>
-            {createMutation.isLoading ? "Saving..." : "Save"}
-          </Button>
-        </form>
-      )}
+                  <TableCell>
+                    {new Date(need.createdAt).toLocaleString()}
+                  </TableCell>
 
-      <div className="space-y-4">
-        {staffingNeeds?.map((need) => (
-          <div
-            key={need._id}
-            className="p-4 bg-gray-100 rounded shadow-sm"
-          >
-            <h2 className="font-bold">{need.companyName}</h2>
-            <p>Focus Area: {need.dataStrategyFocusArea}</p>
-            <p>Notes: {need.dataStrategyNotes}</p>
-          </div>
-        ))}
+                  <TableCell className="text-right flex justify-end gap-2">
+                    <Button className="bg-cyan-400 text-white py-4 px-8 "
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleView(need)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-8 text-gray-500"
+                >
+                  No staffing needs found. Add your first one to get started.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
+
+      {/* View Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Staffing Need Details</DialogTitle>
+          </DialogHeader>
+
+          {viewingNeed && (
+            <div className="space-y-2">
+              <p>
+                <strong>User:</strong>{" "}
+                {`${viewingNeed.firstName} ${viewingNeed.lastName}`}
+              </p>
+              <p>
+                <strong>Email:</strong> {viewingNeed.email}
+              </p>
+              <p>
+                <strong>Company:</strong> {viewingNeed.companyName}
+              </p>
+              <p>
+                <strong>Focus Area:</strong> {viewingNeed.dataStrategyFocusArea}
+              </p>
+              <p>
+                <strong>Notes:</strong> {viewingNeed.dataStrategyNotes}
+              </p>
+              <p>
+                <strong>Time:</strong>{" "}
+                {new Date(viewingNeed.createdAt).toLocaleString()}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

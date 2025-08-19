@@ -365,6 +365,18 @@ export async function dataSetDelete(id:string) {
   
 }
 
+//staffneed 
+
+export async function staffNeed() {
+  try {
+    const res = await api.get("/needed-staff/get");
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch data sets");
+  }
+  
+}
+
 // Services API
 // export const servicesApi = {
 //   getAll: async (): Promise<Service[]> => {
