@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import {
   Table,
   TableBody,
@@ -21,13 +20,13 @@ import {
   
 } from "@/components/ui/dialog";
 
-import { toast } from "sonner";
-import { StaffingNeed, staffingNeedApi, staffNeed } from "@/lib/api";
+
+import { StaffingNeed, staffNeed } from "@/lib/api";
 import { Eye  } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function StaffingNeedPage() {
-  const queryClient = useQueryClient();
-  const [showAddForm, setShowAddForm] = useState(false);
+
   const [viewingNeed, setViewingNeed] = useState<StaffingNeed | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -38,14 +37,6 @@ export default function StaffingNeedPage() {
 
   const staffingNeeds: StaffingNeed[] = data?.data || [];
 
-  const createMutation = useMutation({
-    mutationFn: (newNeed: any) => staffingNeedApi.create(newNeed),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["staffingNeeds"] });
-      setShowAddForm(false);
-      toast.success("Staffing need added successfully!");
-    },
-  });
 
   const handleView = (need: StaffingNeed) => {
     setViewingNeed(need);

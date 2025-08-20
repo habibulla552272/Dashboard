@@ -4,13 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -21,18 +20,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Eye, Edit, Trash2, Plus, Upload } from "lucide-react";
-import {
-  fetchBlog,
-  fetchBlogs,
-  serviceDelete,
-  updateBlog,
-  type Service,
-} from "@/lib/api";
+import { fetchBlog, fetchBlogs, serviceDelete, updateBlog } from "@/lib/api";
 import { toast } from "sonner";
 import Image from "next/image";
 import Add from "./add/Add";
 import { RichTextEditor } from "./editor/RichTextEditor";
-
 
 interface Blog {
   _id: string;
@@ -63,49 +55,41 @@ export function BlogsPage() {
   const queryClient = useQueryClient();
 
   // fetch all blogs
-  const { data: blogda, isLoading } = useQuery({
+  const { data: blogda } = useQuery<{ data: Blog[] }>({
     queryKey: ["blogsData"],
     queryFn: fetchBlogs,
   });
-  const blogsData = blogda?.data || [];
+  const blogsData: Blog[] = blogda?.data || [];
 
   // fetch single blog when viewing
-  const { data: viewDa, isFetching: viewLoading } = useQuery({
+  const { data: viewDa, isFetching: viewLoading } = useQuery<{ data: Blog }>({
     queryKey: ["singleBlog", viewId],
     queryFn: () => fetchBlog(viewId as string),
     enabled: !!viewId,
   });
-  const viewData = viewDa?.data || null;
+  const viewData: Blog | null = viewDa?.data || null;
 
   // delete
-  const deleteMutation = useMutation({
+  const deleteMutation = useMutation<void, Error, string>({
     mutationFn: serviceDelete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blogsData"] });
       toast.success("Blog deleted successfully");
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast.error(error.message || "Failed to delete blog");
     },
   });
 
   // update
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-      image,
-    }: {
-      id: string;
-      data: any;
-      image?: File;
-    }) => await updateBlog(id, data, image),
+  const updateMutation = useMutation<void, Error, { id: string; data: { blogTitle: string; blogDescription: string }; image?: File }>({
+    mutationFn: async ({ id, data, image }) => await updateBlog(id, data, image),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blogsData"] });
       setIsEditDialogOpen(false);
       toast.success("Blog updated successfully");
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast.error(error.message || "Failed to update blog");
     },
   });
@@ -131,9 +115,7 @@ export function BlogsPage() {
     setIsEditDialogOpen(true);
   };
 
-  const handleEditInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setEditFormData({
       ...editFormData,
       [e.target.name]: e.target.value,
@@ -177,10 +159,7 @@ export function BlogsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Blogs</h1>
             <p className="text-gray-600 mt-1">Dashboard &gt; Blogs</p>
           </div>
-          <Button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-blue-500 hover:bg-blue-600"
-          >
+          <Button onClick={() => setShowAddForm(!showAddForm)} className="bg-blue-500 hover:bg-blue-600">
             <Plus className="w-4 h-4 mr-2" />
             {showAddForm ? "Cancel" : "Add Blog"}
           </Button>
@@ -198,7 +177,7 @@ export function BlogsPage() {
             </TableHeader>
             <TableBody>
               {blogsData.length > 0 ? (
-                blogsData.map((blog: Blog) => (
+                blogsData.map((blog) => (
                   <TableRow key={blog._id}>
                     <TableCell>
                       <div className="flex items-start gap-3">
@@ -212,44 +191,26 @@ export function BlogsPage() {
                               height={64}
                             />
                           ) : (
-                            <span className="text-gray-400 text-xs">
-                              No Image
-                            </span>
+                            <span className="text-gray-400 text-xs">No Image</span>
                           )}
                         </div>
                         <div>
                           <h3 className="font-semibold">{blog.blogTitle}</h3>
-                          <p className="text-sm text-gray-600 line-clamp-2 max-w-40">
-                            {blog.blogDescription}
-                          </p>
+                          <p className="text-sm text-gray-600 line-clamp-2 max-w-40">{blog.blogDescription}</p>
                         </div>
                       </div>
                     </TableCell>
 
-                    <TableCell>
-                      {new Date(blog.updatedAt).toLocaleDateString()}
-                    </TableCell>
+                    <TableCell>{new Date(blog.updatedAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleView(blog._id)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => handleView(blog._id)}>
                           <Eye className="h-4 w-4 text-gray-600" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(blog)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(blog)}>
                           <Edit className="w-4 h-4 text-gray-500" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(blog._id)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(blog._id)}>
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </Button>
                       </div>
@@ -258,10 +219,7 @@ export function BlogsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="text-center py-8 text-gray-500"
-                  >
+                  <TableCell colSpan={4} className="text-center py-8 text-gray-500">
                     No blogs found. Add your first blog to get started.
                   </TableCell>
                 </TableRow>
@@ -280,9 +238,7 @@ export function BlogsPage() {
               <p className="text-center text-gray-500">Loading...</p>
             ) : viewData ? (
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">
-                  {viewData.blogTitle}
-                </h3>
+                <h3 className="font-semibold text-lg">{viewData.blogTitle}</h3>
                 <p>{viewData.blogDescription}</p>
                 {viewData.imageLink ? (
                   <Image
@@ -348,9 +304,7 @@ export function BlogsPage() {
                         />
                       ) : (
                         <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500">
-                            No image selected
-                          </span>
+                          <span className="text-gray-500">No image selected</span>
                         </div>
                       )}
                     </div>
@@ -377,18 +331,10 @@ export function BlogsPage() {
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-blue-500 hover:bg-blue-600"
-                  disabled={updateMutation.isPending}
-                >
+                <Button type="submit" className="bg-blue-500 hover:bg-blue-600" disabled={updateMutation.isPending}>
                   {updateMutation.isPending ? "Updating..." : "Update Blog"}
                 </Button>
               </div>

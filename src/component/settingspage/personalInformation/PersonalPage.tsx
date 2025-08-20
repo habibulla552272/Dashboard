@@ -1,59 +1,114 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { User, ChevronRight } from "lucide-react";
-
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { fetchUserProfile, updatePersonal } from "@/lib/api";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-interface PersonalInfo {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
+/* ------------------ Zod Schema ------------------ */
+const personalSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email"),
+  phone: z.string().optional(),
+  country: z.string().optional(),
+  city: z.string().optional(),
+  avatar: z.string().optional(),
+});
+
+type PersonalFormValues = z.infer<typeof personalSchema>;
+
+/* ------------------ API Types ------------------ */
+interface UserProfile {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  country?: string;
+  cityOrState?: string;
+  avatar?: string;
 }
 
+interface ApiResponse<T> {
+  data: T;
+  message?: string;
+}
 
-
+/* ------------------ Component ------------------ */
 const PersonalPage = () => {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
-  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
+
+  // Fetch profile
+  const { data: user } = useQuery<ApiResponse<UserProfile>>({
+    queryKey: ["userdata"],
+    queryFn: fetchUserProfile,
   });
 
-  useEffect(() => {
-    if (session?.accessToken) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/me`, {
-        headers: { Authorization: `Bearer ${session.accessToken}` },
-      })
-        .then(res => res.json())
-        .then((data: PersonalInfo) => setPersonalInfo(data))
-        .catch(err => console.error(err));
-    }
-  }, [session?.accessToken]);
+  const userData = user?.data || {};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Form (extract reset separately)
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+  } = useForm<PersonalFormValues>({
+    resolver: zodResolver(personalSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      country: "",
+      city: "",
+      avatar: session?.user?.image || "",
+    },
+  });
+
+  // Reset form when userData changes
+  useEffect(() => {
+    if (userData) {
+      reset({
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        email: userData.email || "",
+        phone: userData.phone || "",
+        country: userData.country || "",
+        city: userData.cityOrState || "",
+        avatar: userData.avatar || session?.user?.image || "",
+      });
+    }
+  }, [userData, session?.user?.image, reset]);
+
+  // Mutation for updating personal info
+  const personalMutation = useMutation({
+    mutationFn: ({ data, image }: { data: PersonalFormValues; image?: File }) =>
+      updatePersonal(data, image),
+  });
+
+  // Submit full form
+  const handleSubmitForm = async (values: PersonalFormValues) => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/update`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.accessToken}`,
-        },
-        body: JSON.stringify(personalInfo),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to update");
+      await personalMutation.mutateAsync({ data: values });
       toast.success("Personal info updated successfully!");
     } catch (err) {
       if (err instanceof Error) toast.error(err.message);
@@ -62,55 +117,133 @@ const PersonalPage = () => {
     }
   };
 
+  // Trigger hidden file input
+  const handleUpdateProfile = () => {
+    const fileInput = document.getElementById(
+      "avatarInput"
+    ) as HTMLInputElement | null;
+    fileInput?.click();
+  };
+
+  // Handle avatar upload
+  const handleAvatarChange = async (file: File) => {
+    setLoading(true);
+    try {
+      const values = {
+        firstName: watch("firstName"),
+        lastName: watch("lastName"),
+        email: watch("email"),
+        phone: watch("phone"),
+        country: watch("country"),
+        city: watch("city"),
+        avatar: watch("avatar"),
+      };
+      await personalMutation.mutateAsync({ data: values, image: file });
+
+      // Update preview in form
+      setValue("avatar", URL.createObjectURL(file));
+      toast.success("Avatar updated successfully!");
+    } catch (err) {
+      if (err instanceof Error) toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <Card  className="cursor-pointer">
-      <CardHeader className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <User className="h-5 w-5 text-gray-600" />
-          <div>
-            <CardTitle>Personal Information</CardTitle>
-            <CardDescription>Update your personal details</CardDescription>
-          </div>
-        </div>
-   
+    <Card className="p-6">
+      <CardHeader>
+        <CardTitle>Personal Information</CardTitle>
+        <CardDescription>Update your personal details</CardDescription>
       </CardHeader>
 
-
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent>
+        <form
+          onSubmit={handleSubmit(handleSubmitForm)}
+          className="flex flex-col md:flex-row gap-8"
+        >
+          {/* Left side: form */}
+          <div className="flex-1 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>First Name</Label>
-                <Input
-                  value={personalInfo.firstName}
-                  onChange={e => setPersonalInfo({ ...personalInfo, firstName: e.target.value })}
-                />
+                <Input {...register("firstName")} />
               </div>
               <div>
                 <Label>Last Name</Label>
-                <Input
-                  value={personalInfo.lastName}
-                  onChange={e => setPersonalInfo({ ...personalInfo, lastName: e.target.value })}
-                />
+                <Input {...register("lastName")} />
               </div>
             </div>
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={personalInfo.email}
-              onChange={e => setPersonalInfo({ ...personalInfo, email: e.target.value })}
-            />
-            <Label>Phone</Label>
-            <Input
-              value={personalInfo.phone}
-              onChange={e => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
-            />
-            <Button type="submit" disabled={loading}>
-              {loading ? "Updating..." : "Update"}
-            </Button>
-          </form>
-        </CardContent>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Email Address</Label>
+                <Input type="email" {...register("email")} />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input {...register("phone")} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Country</Label>
+                <Input {...register("country")} />
+              </div>
+              <div>
+                <Label>City/State</Label>
+                <Input {...register("city")} />
+              </div>
+            </div>
+
+            <Button type="submit" className="mt-4 w-32" disabled={loading}>
+              {loading ? "Saving..." : "Save"}
+            </Button>
+          </div>
+
+          {/* Right side: avatar */}
+          <div className="flex flex-col items-center">
+            <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center mb-4">
+              {watch("avatar") ? (
+                <Image
+                  src={watch("avatar") || ""}
+                  alt="Avatar"
+                  width={128}
+                  height={128}
+                  className="object-cover"
+                />
+              ) : (
+                <User className="w-16 h-16 text-gray-400" />
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-32"
+              onClick={handleUpdateProfile}
+              disabled={loading}
+            >
+              Edit Image
+            </Button>
+            <p className="mt-2 font-semibold">
+              {watch("firstName")} {watch("lastName")}
+            </p>
+
+            {/* Hidden file input */}
+            <input
+              type="file"
+              accept="image/*"
+              id="avatarInput"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleAvatarChange(file);
+              }}
+            />
+          </div>
+        </form>
+      </CardContent>
     </Card>
   );
 };

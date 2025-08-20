@@ -3,6 +3,7 @@ import axios from "axios";
 import { error } from "console";
 
 import { getSession } from "next-auth/react";
+import { RedirectType } from "next/navigation";
 // import { config } from "process";
 export const API_BASE_URL = "https://mohab0104-backend.onrender.com/api/v1";
 
@@ -348,29 +349,39 @@ export async function dataSetUpdate(id: string, data: any) {
   }
 }
 
-export async function dataSetCreate(data: any) {
+export async function dataSetCreate({
+  id,
+  data,
+}: {
+  id: string;
+  data: { dataSetName: string; file: File };
+}) {
   try {
-    const res = await api.post("/data-set/create", data);
+    const formData = new FormData();
+    formData.append("dataSetName", data.dataSetName);
+    formData.append("file", data.file);
+
+    const res = await api.post(`/data-set/create/${id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res.data;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to update data set");
+    throw new Error(error.message || "Failed to create data set");
   }
 }
 
-// delete 
+// delete
 
-export async function dataSetDelete(id:string) {
-
-  try{
-    const res= await api.delete(`/data-set/delete/${id}`)
-    return res.data
-  }catch(error:any){
-    throw new Error(error.message || 'Failed to Delete data')
+export async function dataSetDelete(id: string) {
+  try {
+    const res = await api.delete(`/data-set/delete/${id}`);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to Delete data");
   }
-  
 }
 
-//staffneed 
+//staffneed
 
 export async function staffNeed() {
   try {
@@ -379,147 +390,59 @@ export async function staffNeed() {
   } catch (error: any) {
     throw new Error(error.message || "Failed to fetch data sets");
   }
-  
 }
 
-// Services API
-// export const servicesApi = {
-//   getAll: async (): Promise<Service[]> => {
-//     const response = await fetch(`${API_BASE_URL}/services/get`);
-//     if (!response.ok) throw new Error("Failed to fetch services");
-//     return response.json();
-//   },
+//user personal or password change
+export async function fetchUserProfile() {
+  try {
+    const response = await api.get("/user/profile");
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch user profile");
+  }
+}
 
-//   create: async (serviceData: {
-//     serviceTitle: string;
-//     serviceDescription: string;
-//     price: number;
-//     category?: string;
-//     status?: "active" | "inactive";
-//     image?: File;
-//   }): Promise<Service> => {
-//     try {
-//       const formData = new FormData();
-//       formData.append("serviceTitle", serviceData.serviceTitle);
-//       formData.append("serviceDescription", serviceData.serviceDescription);
-//       formData.append("price", serviceData.price.toString());
-
-//       if (serviceData.category) {
-//         formData.append("category", serviceData.category);
-//       }
-//       if (serviceData.status) {
-//         formData.append("status", serviceData.status);
-//       }
-//       if (serviceData.image) {
-//         formData.append("imagelink", serviceData.image);
-//       }
-
-//       const response = await fetch(`${API_BASE_URL}/services/create`, {
-//         method: "POST",
-//         body: formData, // Send as FormData instead of JSON
-//       });
-
-//       if (!response.ok) {
-//         const errorText = await response.text();
-//         throw new Error(
-//           `Failed to create service: ${response.status} ${errorText}`
-//         );
-//       }
-
-//       const result = await response.json();
-//       return result;
-//     } catch (error) {
-//       throw error;
-//     }
-//   },
-
-//   update: async (id: string, service: Partial<Service>): Promise<Service> => {
-//     const response = await fetch(`${API_BASE_URL}/services/${id}`, {
-//       method: "PUT",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify(service),
-//     });
-//     if (!response.ok) throw new Error("Failed to update service");
-//     return response.json();
-//   },
-
-//   delete: async (id: string): Promise<void> => {
-//     const response = await fetch(`${API_BASE_URL}/services/${id}`, {
-//       method: "DELETE",
-//     });
-//     if (!response.ok) throw new Error("Failed to delete service");
-//   },
-// };
-
-// Payments API
-// export const paymentsApi = {
-//   getAll: async (): Promise<Payment[]> => {
-//     const response = await fetch(`${API_BASE_URL}/payment`);
-//     if (!response.ok) throw new Error("Failed to fetch payments");
-//     return response.json();
-//   },
-
-//   create: async (
-//     payment: Omit<Payment, "_id" | "createdAt" | "updatedAt">
-//   ): Promise<Payment> => {
-//     const response = await fetch(`${API_BASE_URL}/payment/create-payment`, {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify(payment),
-//     });
-//     if (!response.ok) throw new Error("Failed to create payment");
-//     return response.json();
-//   },
-// };
-
-export const staffingNeedApi = {
-  getAll: async (): Promise<StaffingNeed[]> => {
-    const response = await fetch(`${API_BASE_URL}/needed-staff/get`);
-    if (!response.ok) throw new Error("Failed to fetch staffing needs");
-    return response.json();
-  },
-
-  getMyStaffingNeeds: async (): Promise<StaffingNeed[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/needed-staff/my-needed-staff`
-    );
-    if (!response.ok) throw new Error("Failed to fetch my staffing needs");
-    return response.json();
-  },
-
-  create: async (staffingNeedData: {
-    companyName: string;
-    dataStrategyFocusArea: string;
-    dataStrategyNotes: string;
-  }): Promise<StaffingNeed> => {
-    const response = await fetch(`${API_BASE_URL}/needed-staff/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(staffingNeedData),
+export async function updatePersonal(data: any, image?: File) {
+  try {
+    const formData = new FormData();
+    if (image) {
+      formData.append("image", image);
+    }
+    const res = await api.put("/user/update-profile", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     });
-    if (!response.ok) throw new Error("Failed to create staffing need");
-    return response.json();
-  },
 
-  update: async (
-    id: string,
-    staffingNeed: Partial<StaffingNeed>
-  ): Promise<StaffingNeed> => {
-    const response = await fetch(`${API_BASE_URL}/needed-staff/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(staffingNeed),
+    console.log("This is From Data", res);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update personal information");
+  }
+}
+
+export async function updateUserPassword(data: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  try {
+    const respons = await api.post("/auth/change-password", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     });
-    if (!response.ok) throw new Error("Failed to update staffing need");
-    return response.json();
-  },
+    return respons.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update password information");
+  }
+}
 
-  delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/needed-staff/${id}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) throw new Error("Failed to delete staffing need");
-  },
-};
-
+export async function getAllUser() {
+  try {
+    const response = await api.get("/user");
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to fetch user profile");
+  }
+}
 // export const createService = servicesApi.create;
