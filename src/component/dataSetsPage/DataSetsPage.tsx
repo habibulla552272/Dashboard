@@ -23,20 +23,40 @@ import {
   getAllUser,
 } from "@/lib/api";
 
-interface DataSet {
+// ------------------- Types -------------------
+export interface User {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar?: string;
+  companyName?: string;
+}
+
+export interface DataSet {
   _id: string;
   dataSetName: string;
   companyName: string;
-  userId: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    avatar?: string;
-    companyName?: string;
-  };
+  userId: User;
   createdAt: string;
 }
 
+interface CreateDataSetVars {
+  id: string; // userId
+  data: {
+    dataSetName: string;
+    file: File;
+  };
+}
+
+interface UpdateDataSetVars {
+  id: string;
+  data: Partial<Pick<DataSet, "dataSetName" | "companyName">> & {
+    userId?: Partial<User>;
+  };
+}
+
+// ------------------- Component -------------------
 export function DataSetsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -48,27 +68,22 @@ export function DataSetsPage() {
   const itemsPerPage = 10;
   const queryClient = useQueryClient();
 
-  // Fetch data
-  const { data } = useQuery({
+  // ------------------- Queries -------------------
+  const { data } = useQuery<{ data: DataSet[] }>({
     queryKey: ["dataSets"],
     queryFn: fetchDataSets,
   });
 
-  // fetch all data
-  const { data: alluser } = useQuery({
+  const { data: alluser } = useQuery<{ data: User[] }>({
     queryKey: ["alluser"],
-    queryFn: getAllUser, // make sure this matches your imported function
+    queryFn: getAllUser,
   });
 
-  // log the fetched data
-  console.log("all user", alluser);
+  const setsData = data?.data ?? [];
 
-  const setsData = data?.data || [];
-
-  // Mutations
-  const dataSetMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      dataSetUpdate(id, data),
+  // ------------------- Mutations -------------------
+  const dataSetMutation = useMutation<void, Error, UpdateDataSetVars>({
+    mutationFn: ({ id, data }) => dataSetUpdate(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dataSets"] });
       toast.success("Data set updated successfully");
@@ -78,8 +93,8 @@ export function DataSetsPage() {
     onError: () => toast.error("Failed to update data set"),
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data) => dataSetCreate(data),
+  const createMutation = useMutation<void, Error, CreateDataSetVars>({
+    mutationFn: (vars) => dataSetCreate(vars),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dataSets"] });
       toast.success("Data set created successfully");
@@ -88,8 +103,8 @@ export function DataSetsPage() {
     onError: () => toast.error("Failed to create data set"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => dataSetDelete(id),
+  const deleteMutation = useMutation<void, Error, string>({
+    mutationFn: (id) => dataSetDelete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dataSets"] });
       toast.success("Data set deleted successfully");
@@ -97,11 +112,12 @@ export function DataSetsPage() {
     onError: () => toast.error("Failed to delete data set"),
   });
 
-  // const totalPages = Math.ceil(setsData.length / itemsPerPage);
+  // ------------------- Pagination -------------------
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentDataSets = setsData.slice(startIndex, endIndex);
 
+  // ------------------- Helpers -------------------
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleString("en-US", {
       month: "2-digit",
@@ -131,7 +147,7 @@ export function DataSetsPage() {
     if (!editingDataSet) return;
 
     const formData = new FormData(e.currentTarget);
-    const updatedData = {
+    const updatedData: UpdateDataSetVars["data"] = {
       dataSetName: formData.get("dataSetName") as string,
       companyName: formData.get("companyName") as string,
       userId: {
@@ -147,7 +163,6 @@ export function DataSetsPage() {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);
-
     const id = formData.get("companyName") as string;
     const dataSetName = formData.get("dataSetName") as string;
     const file = formData.get("file") as File;
@@ -159,18 +174,11 @@ export function DataSetsPage() {
 
     createMutation.mutate({
       id,
-      data: {
-        dataSetName,
-        file,
-      },
+      data: { dataSetName, file },
     });
   };
-  // Get unique company names for dropdown
-  console.log("currentdata", currentDataSets);
 
-  // const companyOptions = Array.from(new Set(currentDataSets.map(ds => ds.userId.companyName)
-  // console.log("companyOptions", companyOptions)
-
+  // ------------------- JSX -------------------
   return (
     <div className="p-6">
       {/* Header */}
@@ -213,47 +221,20 @@ export function DataSetsPage() {
                   <option value="">Select a company</option>
                   {alluser?.data.map((user) => (
                     <option key={user._id} value={user._id}>
-                      {`${user.email}-${user.companyName}`}
+                      {`${user.email}-${user.companyName ?? ""}`}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
                 <Label htmlFor="file">Upload Data Set</Label>
-                <div className="mt-1 flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6">
-                  <div className="space-y-1 text-center">
-                    <svg
-                      className="mx-auto h-12 w-12 text-gray-400"
-                      stroke="currentColor"
-                      fill="none"
-                      viewBox="0 0 48 48"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M8 16v20a4 4 0 004 4h24a4 4 0 004-4V16M16 24l8-8 8 8M24 16v16"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <div className="flex text-sm text-gray-600">
-                      <label
-                        htmlFor="file"
-                        className="relative cursor-pointer rounded-md bg-white font-medium text-cyan-600 hover:text-cyan-500 focus-within:outline-none"
-                      >
-                        <span>Upload your JSON file</span>
-                        <Input
-                          id="file"
-                          name="file"
-                          type="file"
-                          className="sr-only"
-                          required
-                        />
-                      </label>
-                    </div>
-                    <p className="text-xs text-gray-500">JSON file only</p>
-                  </div>
-                </div>
+                <Input
+                  id="file"
+                  name="file"
+                  type="file"
+                  required
+                  accept="application/json"
+                />
               </div>
               <Button
                 type="submit"
@@ -267,7 +248,7 @@ export function DataSetsPage() {
         </Dialog>
       </div>
 
-      {/* Data Sets Table */}
+      {/* Table */}
       <div className="bg-white rounded-lg border">
         <div className="grid grid-cols-5 gap-4 p-4 border-b bg-gray-50 font-medium text-gray-700">
           <div>Data Set Name</div>
@@ -277,35 +258,33 @@ export function DataSetsPage() {
           <div>Actions</div>
         </div>
         <div className="divide-y">
-          {currentDataSets.map((dataSet: any) => (
+          {currentDataSets.map((dataSet) => (
             <div
               key={dataSet._id}
               className="grid grid-cols-5 gap-4 p-4 items-center"
             >
               <div>
                 <p className="font-medium text-gray-900">
-                  {dataSet?.dataSetName}
+                  {dataSet.dataSetName}
                 </p>
               </div>
               <div>
-                <p className="text-gray-900">{dataSet?.companyName}</p>
+                <p className="text-gray-900">{dataSet.companyName}</p>
               </div>
               <div className="flex items-center space-x-3">
                 <Avatar className="h-8 w-8">
                   <AvatarImage
-                    src={dataSet?.userId?.avatar || "/placeholder.svg"}
+                    src={dataSet.userId.avatar || "/placeholder.svg"}
                   />
                   <AvatarFallback>
-                    {dataSet?.userId?.firstName?.[0] || "?"}
+                    {dataSet.userId.firstName?.[0] ?? "?"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium text-gray-900 text-sm">{`${
-                    dataSet?.userId?.firstName || ""
-                  } ${dataSet?.userId?.lastName || ""}`}</p>
-                  <p className="text-xs text-gray-500">
-                    {dataSet?.userId?.email}
+                  <p className="font-medium text-gray-900 text-sm">
+                    {`${dataSet.userId.firstName} ${dataSet.userId.lastName}`}
                   </p>
+                  <p className="text-xs text-gray-500">{dataSet.userId.email}</p>
                 </div>
               </div>
               <div>
@@ -358,16 +337,16 @@ export function DataSetsPage() {
               <div className="flex items-center space-x-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage
-                    src={viewingDataSet.userId?.avatar || "/placeholder.svg"}
+                    src={viewingDataSet.userId.avatar || "/placeholder.svg"}
                   />
                   <AvatarFallback>
-                    {viewingDataSet.userId?.firstName?.[0]}
+                    {viewingDataSet.userId.firstName?.[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{`${viewingDataSet.userId?.firstName} ${viewingDataSet.userId?.lastName}`}</p>
+                  <p className="font-medium">{`${viewingDataSet.userId.firstName} ${viewingDataSet.userId.lastName}`}</p>
                   <p className="text-sm text-gray-500">
-                    {viewingDataSet.userId?.email}
+                    {viewingDataSet.userId.email}
                   </p>
                 </div>
               </div>
@@ -394,12 +373,18 @@ export function DataSetsPage() {
                   defaultValue={editingDataSet.dataSetName}
                 />
               </div>
-
+              <div>
+                <Label>Company Name</Label>
+                <Input
+                  name="companyName"
+                  defaultValue={editingDataSet.companyName}
+                />
+              </div>
               <div>
                 <Label>User First Name</Label>
                 <Input
                   name="firstName"
-                  defaultValue={editingDataSet.userId?.firstName}
+                  defaultValue={editingDataSet.userId.firstName}
                 />
               </div>
               <div>
@@ -407,7 +392,7 @@ export function DataSetsPage() {
                 <Input
                   name="email"
                   type="email"
-                  defaultValue={editingDataSet.userId?.email}
+                  defaultValue={editingDataSet.userId.email}
                 />
               </div>
               <Button

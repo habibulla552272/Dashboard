@@ -8,7 +8,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { User } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
@@ -34,7 +34,6 @@ const personalSchema = z.object({
 
 type PersonalFormValues = z.infer<typeof personalSchema>;
 
-/* ------------------ API Types ------------------ */
 interface UserProfile {
   firstName?: string;
   lastName?: string;
@@ -50,7 +49,6 @@ interface ApiResponse<T> {
   message?: string;
 }
 
-/* ------------------ Component ------------------ */
 const PersonalPage = () => {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
@@ -61,50 +59,32 @@ const PersonalPage = () => {
     queryFn: fetchUserProfile,
   });
 
-  const userData = user?.data || {};
+  const userData = user?.data;
 
-  // Form (extract reset separately)
+  // Initialize form directly with userData
   const {
     register,
     handleSubmit,
     watch,
-    reset,
     setValue,
   } = useForm<PersonalFormValues>({
     resolver: zodResolver(personalSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      country: "",
-      city: "",
-      avatar: session?.user?.image || "",
+    values: {
+      firstName: userData?.firstName || "",
+      lastName: userData?.lastName || "",
+      email: userData?.email || "",
+      phone: userData?.phone || "",
+      country: userData?.country || "",
+      city: userData?.cityOrState || "",
+      avatar: userData?.avatar || session?.user?.image || "",
     },
   });
 
-  // Reset form when userData changes
-  useEffect(() => {
-    if (userData) {
-      reset({
-        firstName: userData.firstName || "",
-        lastName: userData.lastName || "",
-        email: userData.email || "",
-        phone: userData.phone || "",
-        country: userData.country || "",
-        city: userData.cityOrState || "",
-        avatar: userData.avatar || session?.user?.image || "",
-      });
-    }
-  }, [userData, session?.user?.image, reset]);
-
-  // Mutation for updating personal info
   const personalMutation = useMutation({
     mutationFn: ({ data, image }: { data: PersonalFormValues; image?: File }) =>
       updatePersonal(data, image),
   });
 
-  // Submit full form
   const handleSubmitForm = async (values: PersonalFormValues) => {
     setLoading(true);
     try {
@@ -117,7 +97,6 @@ const PersonalPage = () => {
     }
   };
 
-  // Trigger hidden file input
   const handleUpdateProfile = () => {
     const fileInput = document.getElementById(
       "avatarInput"
@@ -125,7 +104,6 @@ const PersonalPage = () => {
     fileInput?.click();
   };
 
-  // Handle avatar upload
   const handleAvatarChange = async (file: File) => {
     setLoading(true);
     try {
@@ -140,7 +118,6 @@ const PersonalPage = () => {
       };
       await personalMutation.mutateAsync({ data: values, image: file });
 
-      // Update preview in form
       setValue("avatar", URL.createObjectURL(file));
       toast.success("Avatar updated successfully!");
     } catch (err) {
@@ -162,7 +139,7 @@ const PersonalPage = () => {
           onSubmit={handleSubmit(handleSubmitForm)}
           className="flex flex-col md:flex-row gap-8"
         >
-          {/* Left side: form */}
+          {/* Left side */}
           <div className="flex-1 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -202,7 +179,7 @@ const PersonalPage = () => {
             </Button>
           </div>
 
-          {/* Right side: avatar */}
+          {/* Right side */}
           <div className="flex flex-col items-center">
             <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center mb-4">
               {watch("avatar") ? (
@@ -230,7 +207,6 @@ const PersonalPage = () => {
               {watch("firstName")} {watch("lastName")}
             </p>
 
-            {/* Hidden file input */}
             <input
               type="file"
               accept="image/*"

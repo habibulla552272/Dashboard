@@ -8,7 +8,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Lock } from "lucide-react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { updateUserPassword } from "@/lib/api";
 
-
 // ✅ Zod Schema
 const passwordSchema = z
   .object({
@@ -44,7 +43,7 @@ const passwordSchema = z
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 const ChangePasswordPage = () => {
-  const { data: session } = useSession();
+  // const { data: session } = useSession();
 
   // ✅ React Hook Form
   const form = useForm<PasswordFormValues>({
@@ -69,7 +68,7 @@ const ChangePasswordPage = () => {
       toast.success("Password changed successfully!");
       form.reset();
     },
-    onError: (err: any) => {
+    onError: (err) => {
       toast.error(err.message || "Something went wrong");
     },
   });
@@ -91,7 +90,10 @@ const ChangePasswordPage = () => {
 
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             {/* Current Password */}
             <FormField
               control={form.control}

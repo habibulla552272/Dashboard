@@ -1,9 +1,8 @@
 // API configuration and types
 import axios from "axios";
-import { error } from "console";
 
 import { getSession } from "next-auth/react";
-import { RedirectType } from "next/navigation";
+
 // import { config } from "process";
 export const API_BASE_URL = "https://mohab0104-backend.onrender.com/api/v1";
 
@@ -49,11 +48,11 @@ export interface Payment {
 }
 
 export interface StaffingNeed {
-  email: ReactNode;
-  staffDescription: ReactNode;
-  lastName: any;
-  firstName: any;
-  businessEmail: ReactNode;
+  email: string;
+  staffDescription: string;
+  lastName: string;
+  firstName: string;
+  businessEmail: string;
   _id: string;
   userId: string;
   companyName: string;
@@ -86,6 +85,7 @@ export async function stats() {
 }
 
 //catagory data
+
 export async function categoryStats() {
   try {
     const res = await api.get("/payment/category-stats");
@@ -100,7 +100,14 @@ export async function categoryStats() {
 //Services data call
 
 // create service
-export async function createService(data: any, image?: File) {
+interface CreateServiceData {
+  serviceTitle: string;
+  serviceDescription: string;
+  price: number;
+  category: string;
+  status: "active" | "inactive";
+}
+export async function createService(data: CreateServiceData, image?: File) {
   try {
     const formData = new FormData();
     formData.append("data", JSON.stringify(data));
@@ -113,8 +120,10 @@ export async function createService(data: any, image?: File) {
       },
     });
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to create service");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error("Failed to create service");
+    }
   }
 }
 
@@ -143,13 +152,26 @@ export async function serviceDelete(id: string) {
   try {
     const respons = await api.delete(`/services/${id}`);
     return respons.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch admin stats");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch admin stats");
+    }
   }
 }
 
 //service
-export async function serviceEdit(id: string, data: any, image?: File) {
+interface ServiceEditData {
+  serviceTitle: string;
+  serviceDescription: string;
+  price: number;
+  category: string;
+  status: "active" | "inactive";
+}
+export async function serviceEdit(
+  id: string,
+  data: ServiceEditData,
+  image?: File
+) {
   try {
     const formData = new FormData();
     formData.append("data", JSON.stringify(data));
@@ -162,8 +184,10 @@ export async function serviceEdit(id: string, data: any, image?: File) {
       },
     });
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch admin stats");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch admin stats");
+    }
   }
 }
 
@@ -173,8 +197,10 @@ export async function fetchStrategies(page = 1, limit = 10) {
   try {
     const response = await api.get(`/strategy/get?page=${page}&limit=${limit}`);
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch strategies");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch strategies");
+    }
   }
 }
 // Fetch a specific strategy
@@ -182,18 +208,29 @@ export async function fetchStrategy(id: string) {
   try {
     const response = await api.get(`/strategy/${id}`);
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch strategy");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch strategy");
+    }
   }
 }
 
 // Update a specific strategy
-export async function updateStrategy(id: string, data: any) {
+
+interface UpdateStrategyData {
+  strategyName: string;
+  strategyDescription: string;
+  focusArea: string;
+  notes: string;
+}
+export async function updateStrategy(id: string, data: UpdateStrategyData) {
   try {
     const response = await api.put(`/strategy/${id}`, data);
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update strategy");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to update strategy");
+    }
   }
 }
 
@@ -204,8 +241,10 @@ export async function fetchUserStrategies(page = 1, limit = 5) {
       `/strategy/my-strategy?page=${page}&limit=${limit}`
     );
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch user strategies");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch user strategies");
+    }
   }
 }
 
@@ -213,17 +252,28 @@ export async function deleteStrategy(id: string) {
   try {
     const response = await api.delete(`/strategy/${id}`);
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to delete strategy");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to delete strategy");
+    }
   }
 }
 
-export async function createStrategy(data: any) {
+// Create a new strategy
+interface CreateStrategyData {
+  strategyName: string;
+  strategyDescription: string;
+  focusArea: string;
+  notes: string;
+}
+export async function createStrategy(data: CreateStrategyData) {
   try {
     const response = await api.post("/strategy/create", data);
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to create strategy");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to create strategy");
+    }
   }
 }
 
@@ -237,12 +287,19 @@ export async function fetchBlog(id: string) {
   try {
     const response = await api.get(`/blog/${id}`);
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch blog");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch blog");
+    }
   }
 }
 
-export async function createBlog(data: any, image?: File) {
+interface CreateBlogData {
+  title: string;
+  content: string;
+}
+
+export async function createBlog(data: CreateBlogData, image?: File) {
   try {
     const formData = new FormData();
     formData.append("data", JSON.stringify(data));
@@ -255,12 +312,23 @@ export async function createBlog(data: any, image?: File) {
       },
     });
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to create blog");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to create blog");
+    }
   }
 }
 
-export async function updateBlog(id: string, data: any, image?: File) {
+interface UpdateBlogData {
+  title: string;
+  content: string;
+}
+
+export async function updateBlog(
+  id: string,
+  data: UpdateBlogData,
+  image?: File
+) {
   try {
     const formData = new FormData();
     formData.append("data", JSON.stringify(data));
@@ -273,8 +341,10 @@ export async function updateBlog(id: string, data: any, image?: File) {
       },
     });
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update blog");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to update blog");
+    }
   }
 }
 
@@ -282,8 +352,10 @@ export async function deleteBlog(id: string) {
   try {
     const response = await api.delete(`/blog/${id}`);
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to delete blog");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to delete blog");
+    }
   }
 }
 
@@ -293,17 +365,27 @@ export async function solutionData() {
   try {
     const res = await api.get("/solution/get");
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to Fetch Solution data");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to Fetch Solution data");
+    }
   }
 }
 
-export async function updateSolution(id: string, data: any) {
+interface CreateSolutionData {
+  solutionName: string;
+  solutionDescription: string;
+  solutionCategory: string;
+  solutionStatus: "active" | "inactive";
+}
+export async function updateSolution(id: string, data: CreateSolutionData) {
   try {
     const res = await api.put(`/solution/${id}`, data);
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to Update Solution");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to Update Solution");
+    }
   }
 }
 
@@ -313,8 +395,10 @@ export async function delteSolution(id: string) {
   try {
     const respons = await api.delete(`/solution/${id}`);
     return respons.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to delete solution");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to delete solution");
+    }
   }
 }
 
@@ -324,8 +408,10 @@ export async function fetchPayment() {
   try {
     const res = await api.get("/payment");
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch payment");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch payment");
+    }
   }
 }
 
@@ -335,17 +421,26 @@ export async function fetchDataSets() {
   try {
     const res = await api.get("/data-set/all");
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch data sets");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch data sets");
+    }
   }
 }
 
-export async function dataSetUpdate(id: string, data: any) {
+interface DataSetUpdateData {
+  dataSetName: string;
+  file?: File; // Optional, if you want to update the file as well
+}
+
+export async function dataSetUpdate(id: string, data: DataSetUpdateData) {
   try {
     const res = await api.put(`/data-set/update/${id}`, data);
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update data set");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to update data set");
+    }
   }
 }
 
@@ -365,8 +460,10 @@ export async function dataSetCreate({
       headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to create data set");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to create data set");
+    }
   }
 }
 
@@ -376,8 +473,10 @@ export async function dataSetDelete(id: string) {
   try {
     const res = await api.delete(`/data-set/delete/${id}`);
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to Delete data");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to Delete data");
+    }
   }
 }
 
@@ -387,8 +486,10 @@ export async function staffNeed() {
   try {
     const res = await api.get("/needed-staff/get");
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch data sets");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch data sets");
+    }
   }
 }
 
@@ -397,12 +498,23 @@ export async function fetchUserProfile() {
   try {
     const response = await api.get("/user/profile");
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch user profile");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch user profile");
+    }
   }
 }
 
-export async function updatePersonal(data: any, image?: File) {
+interface UpdatePersonalData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  companyName: string;
+  jobTitle: string;
+}
+
+export async function updatePersonal(data: UpdatePersonalData, image?: File) {
   try {
     const formData = new FormData();
     if (image) {
@@ -416,8 +528,10 @@ export async function updatePersonal(data: any, image?: File) {
 
     console.log("This is From Data", res);
     return res.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update personal information");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to update personal information");
+    }
   }
 }
 
@@ -432,8 +546,10 @@ export async function updateUserPassword(data: {
       },
     });
     return respons.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to update password information");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to update password information");
+    }
   }
 }
 
@@ -441,8 +557,10 @@ export async function getAllUser() {
   try {
     const response = await api.get("/user");
     return response.data;
-  } catch (error: any) {
-    throw new Error(error.message || "Failed to fetch user profile");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message || "Failed to fetch user profile");
+    }
   }
 }
 // export const createService = servicesApi.create;
